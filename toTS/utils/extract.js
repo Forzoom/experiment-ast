@@ -1,23 +1,21 @@
 const { builders: b } = require('ast-types');
-
-exports.importModuleFromVuex = b.importDeclaration(
-    [b.importSpecifier(b.identifier('Module'))],
-    b.literal('vuex'),
-);
-exports.importRootStateFromStoreDTS = b.importDeclaration(
-    [b.importSpecifier(b.identifier('RootState'))],
-    b.literal('@/types/store'),
-);
-exports.exportDefaultM = b.exportDefaultDeclaration(b.identifier('m'));
-const tsPropertySignature = exports.tsPropertySignature = function(id, reference) {
-    return b.tsPropertySignature(b.identifier(id), b.tsTypeAnnotation(b.tsTypeReference(b.identifier(reference))));
-}
+const {
+    tsPropertySignature,
+} = require('./b');
 
 exports.asOriginal = function(p) {
+    console.log(p);
     return p.value;
 }
 exports.asPropertySignature = function(p) {
     return tsPropertySignature(p.value.key.name, 'any');
+}
+exports.withDeclaration = function(p) {
+    return p.value.declaration;
+}
+exports.getValueWithAddId = function(p) {
+    p.value.value.id = b.identifier(p.value.key.name);
+    return p.value.value;
 }
 
 /**
@@ -47,19 +45,14 @@ exports.extractPropertyFromObject = function(name, cb) {
     };
 }
 
-exports.camcelCaseWithFirstLetter = function(str) {
-    return str.substr(0, 1).toUpperCase() + str.substr(1).replace(/[-_][a-z0-9]/g, (c) => c.substr(1).toUpperCase());
+exports.extractExportDefault = function() {
+    const result = {};
+    return {
+        result,
+        factory(p) {
+            if (p.type === 'ExportDefaultDeclaration') {
+                result.value = cb(p);
+            }
+        },
+    }
 }
-
-// type Id = number
-// const node = b.tsTypeAliasDeclaration(b.identifier('Id'), b.tsNumberKeyword())
-
-// const m: m = {}
-// const m = b.identifier('m');
-// m.typeAnnotation = b.tsTypeAnnotation(b.tsTypeReference(b.identifier('m')));
-// const node = b.variableDeclaration('var', [
-//     b.variableDeclarator(
-//         m,
-//         null,
-//     )
-// ])

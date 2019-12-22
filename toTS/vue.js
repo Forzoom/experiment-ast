@@ -10,8 +10,10 @@ const {
     importModuleFromVuex,
     importRootStateFromStoreDTS,
     exportDefaultM,
-    extractStatePropertySignature,
+    extractPropertyFromObject,
     camcelCaseWithFirstLetter,
+    asOriginal,
+    getValueWithAddId,
 } = require('./utils');
 
 /**
@@ -23,5 +25,31 @@ module.exports = function(input, output) {
         console.warn(input + ' isnt a vue file');
         return;
     }
-    const originalCode = fs.readFileSync(input);
+    const originalCode = fs.readFileSync(input, 'utf-8');
+    const startPos = originalCode.indexOf('<script>');
+    const endPos = originalCode.indexOf('</script>');
+    const header = originalCode.substr(0, startPos) + '<script lang="ts">';
+    const footer = originalCode.substr(endPos);
+    const jsScript = originalCode.substr(startPos + 8, endPos - startPos - 8);
+    const originalAst = recast.parse(jsScript, {
+        parser: tsParser,
+    });
+    const generatedAst = recast.parse('');
+
+    const {
+        list: methods,
+        factory: extractMethods,
+    } = extractPropertyFromObject('methods', getValueWithAddId);
+
+    recast.visit(originalAst, {
+        visitProperty(p) {
+            extractMethods(p);
+            this.traverse(p);
+        },
+    });
+
+    console.log(methods.map(v => v));
+    generatedAst.program.body.push(...methods);
+    const code = recast.print(generatedAst).code;
+    console.log(code);
 }

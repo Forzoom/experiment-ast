@@ -11,7 +11,7 @@ const {
     importRootStateFromStoreDTS,
     exportDefaultM,
     asPropertySignature,
-    extractPropertyFrom,
+    extractPropertyFromObject,
     camcelCaseWithFirstLetter,
 } = require('./utils');
 
