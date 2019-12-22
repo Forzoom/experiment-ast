@@ -14,6 +14,8 @@ const {
     camcelCaseWithFirstLetter,
     asOriginal,
     getValueWithAddId,
+    extractExportDefault,
+    addStore,
 } = require('./utils');
 
 /**
@@ -40,16 +42,67 @@ module.exports = function(input, output) {
         list: methods,
         factory: extractMethods,
     } = extractPropertyFromObject('methods', getValueWithAddId);
+    const {
+        result: computed,
+        factory: extractComputed,
+    } = extractExportDefault('computed', asOriginal);
+    const {
+        result: name,
+        factory: extractName,
+    } = extractExportDefault('name', asOriginal);
 
     recast.visit(originalAst, {
         visitProperty(p) {
             extractMethods(p);
+            extractName(p);
+            extractComputed(p);
             this.traverse(p);
         },
     });
 
-    console.log(methods.map(v => v));
-    generatedAst.program.body.push(...methods);
+    const className = name.value.value.value;
+    const computedDefinitions = computed.value.value.properties.map((property) => {
+        // console.log(property);
+        if (property.type === 'SpreadElement') {
+            const result = [];
+            if (property.argument.type === 'CallExpression') {
+                for (const argument of property.argument.arguments) {
+                    // 这是所有的内容
+                    for (const property of argument.properties) {
+                        const declaration = b.tsDeclareMethod(property.key, []);
+                        declaration.kind = 'get';
+                        declaration.async = property.async;
+                        const returnStatement = b.returnStatement(addStore(property.value.body));
+                        declaration.value = b.functionExpression(property.key, [], b.blockStatement([returnStatement]));
+                        declaration.accessibility = 'public';
+                        result.push(declaration);
+                    }
+                }
+            }
+            return result;
+        } else if (property.type === 'FunctionExpression') {
+            const declaration = b.tsDeclareMethod(property.id, property.params);
+            declaration.kind = 'get';
+            declaration.async = property.async;
+            declaration.value = property;
+            declaration.accessibility = 'public';
+            return declaration;
+        }
+    });
+    const methodDefinitions = methods.map(method => {
+        const declaration = b.tsDeclareMethod(method.id, method.params);
+        declaration.kind = 'method';
+        declaration.async = method.async;
+        declaration.value = method;
+        declaration.accessibility = 'public';
+        return declaration;
+    });
+    // console.log('target12', computedDefinitions.flat().length);
+    // 定义class
+    const clazzDecorator = b.decorator(b.objectExpression([b.property('init', b.identifier('name'), b.literal(className))]));
+    const clazz = b.classDeclaration(b.identifier(className), b.classBody([...computedDefinitions.flat(), ...methodDefinitions]), b.identifier('Vue'));
+
+    generatedAst.program.body.push(clazzDecorator, clazz);
     const code = recast.print(generatedAst).code;
     console.log(code);
 }

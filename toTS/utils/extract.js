@@ -4,7 +4,6 @@ const {
 } = require('./b');
 
 exports.asOriginal = function(p) {
-    console.log(p);
     return p.value;
 }
 exports.asPropertySignature = function(p) {
@@ -45,14 +44,34 @@ exports.extractPropertyFromObject = function(name, cb) {
     };
 }
 
-exports.extractExportDefault = function() {
+exports.extractExportDefault = function(name, cb) {
+    if (!cb) {
+        cb = name;
+        name = null;
+    }
     const result = {};
     return {
         result,
         factory(p) {
-            if (p.type === 'ExportDefaultDeclaration') {
-                result.value = cb(p);
+            if (!cb) {
+                if (p.type === 'ExportDefaultDeclaration') {
+                    result.value = cb(p);
+                }
+            } else {
+                if (p.value) { // Property
+                    const parentPath1 = p.parentPath;
+                    if (parentPath1) { // Array
+                        const parentPath2 = parentPath1.parentPath;
+                        if (parentPath2) { // ExportDefaultDeclaration
+                            const parentPath3 = parentPath2.parentPath;
+                            if (parentPath3 && parentPath3.value.type === 'ExportDefaultDeclaration' && p.value.key.name === name) {
+                                console.log(cb(p));
+                                result.value = cb(p);
+                            }
+                        }
+                    }
+                }
             }
         },
-    }
+    };
 }
