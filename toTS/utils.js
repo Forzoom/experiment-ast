@@ -13,26 +13,31 @@ const tsPropertySignature = exports.tsPropertySignature = function(id, reference
     return b.tsPropertySignature(b.identifier(id), b.tsTypeAnnotation(b.tsTypeReference(b.identifier(reference))));
 }
 
+exports.asOriginal = function(p) {
+    return p.value;
+}
+exports.asPropertySignature = function(p) {
+    return tsPropertySignature(p.value.key.name, 'any');
+}
+
 /**
  * 使用闭包形式
  */
-exports.extractStatePropertySignature = function(p) {
+exports.extractPropertyFromObject = function(name, cb) {
     const list = [];
     return {
         list,
         factory(p) {
-            if (p.value) {
+            if (p.value) { // Property
                 const parentPath1 = p.parentPath;
-                if (parentPath1) {
+                if (parentPath1) { // Array
                     const parentPath2 = parentPath1.parentPath;
-                    if (parentPath2.value.type === 'ObjectExpression') {
+                    if (parentPath2.value.type === 'ObjectExpression') { // ObjectExpression
                         const parentPath3 = parentPath2.parentPath;
                         if (parentPath3) {
                             const key = parentPath3.value.key;
-                            if (key && key.name === 'state') {
-                                list.push(
-                                    tsPropertySignature(p.value.key.name, 'any')
-                                );
+                            if (key && key.name === name) { // 并且是我们所想要的
+                                list.push(cb(p));
                             }
                         }
                     }

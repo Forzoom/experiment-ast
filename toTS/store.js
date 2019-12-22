@@ -10,12 +10,21 @@ const {
     importModuleFromVuex,
     importRootStateFromStoreDTS,
     exportDefaultM,
-    extractStatePropertySignature,
+    asPropertySignature,
+    extractPropertyFrom,
     camcelCaseWithFirstLetter,
 } = require('./utils');
 
+/**
+ * 对于store文件进行处理
+ */
 module.exports = function(input, output) {
-    const fileName = path.basename(input, path.extname(input));
+    const extname = path.extname(input);
+    if (extname !== '.js') {
+        console.warn(input + ' isnt a js file');
+        return;
+    }
+    const fileName = path.basename(input, extname);
     const originalCode = fs.readFileSync(input);
     const originalAst = recast.parse(originalCode, {
         parser: tsParser,
@@ -26,7 +35,7 @@ module.exports = function(input, output) {
     const {
         list: interfacePropertyList,
         factory: interfacePropertyFactory,
-    } = extractStatePropertySignature();
+    } = extractPropertyFromObject('state', asPropertySignature);
     let moduleObject = null;
     
     // 对于store进行处理

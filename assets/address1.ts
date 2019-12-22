@@ -6,13 +6,13 @@ import {
 import { Module } from "vuex";
 import { RootState } from "@/types/store";
 
-export interface AddressState {
+export interface Address1State {
   _provinceList: any;
   _listMap: any;
   _districtMap: any;
 }
 
-const m: Module<AddressState, RootState> = {
+const m: Module<Address1State, RootState> = {
   namespaced: true,
 
   state: {
