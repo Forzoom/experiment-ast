@@ -42,6 +42,10 @@ exports.extractStatePropertySignature = function(p) {
     };
 }
 
+exports.camcelCaseWithFirstLetter = function(str) {
+    return str.substr(0, 1).toUpperCase() + str.substr(1).replace(/[-_][a-z0-9]/g, (c) => c.substr(1).toUpperCase());
+}
+
 // type Id = number
 // const node = b.tsTypeAliasDeclaration(b.identifier('Id'), b.tsNumberKeyword())
 
