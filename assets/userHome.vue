@@ -113,6 +113,7 @@ import Toast from '@/components/toast/toast';
 import Clipboard from 'clipboard';
 
 let clipboard: ClipboardJS | null = null;
+
 @Component({
     name: 'UserHome',
     components: {
@@ -120,6 +121,8 @@ let clipboard: ClipboardJS | null = null;
     },
 })
 export default class UserHome extends Vue {
+    @Prop({ type: String }) public test!: string;
+
     /** swipe */
     public swiperOption: object = {
         spaceBetween: 30,

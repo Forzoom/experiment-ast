@@ -90,7 +90,9 @@ const ast = recast.parse(generatedCode);
             if (generatedMap[key]) {
                 const m = generatedMap[key];
                 delete generatedMap[key];
+                // 只是对于name进行修改
                 id.name = m.name;
+                // 如果对于loc进行修改的话，是否能够生成正确行信息，或者说recast.print最终是如何生成代码的呢?
                 // id.loc.start = {
                 //     line: m.originalLine,
                 //     column: m.originalColumn,
@@ -102,12 +104,15 @@ const ast = recast.parse(generatedCode);
                 //     token: id.loc.end.token,
                 // };
                 // 不是很明白这里的token的意义
+                // console.log(id, m);
+                this.traverse(identifier);
+            } else {
+                this.traverse(identifier);
             }
-            // console.log(id);
-            this.traverse(identifier);
         },
     });
 
+    console.log(ast.program.loc.tokens);
     const keys = Object.keys(generatedMap);
     console.log(keys.length);
     console.log(keys.slice(0, 30).map(key => generatedMap[key]));

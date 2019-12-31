@@ -5,17 +5,16 @@ const path = require('path');
 const { Type, builtInTypes, builders: b, finalize } = require('ast-types');
 const { def } = Type;
 const { string } = builtInTypes;
-const tsParser = require('@typescript-eslint/typescript-estree');
+const parser = require('@babel/parser');
 const {
-    importModuleFromVuex,
-    importRootStateFromStoreDTS,
-    exportDefaultM,
     extractPropertyFromObject,
-    camcelCaseWithFirstLetter,
     asOriginal,
+    asPropertiesInObject,
     getValueWithAddId,
     extractExportDefault,
     addStore,
+    importFromVuePropertyDecorator,
+    camelCaseWithDollar,
 } = require('./utils');
 
 /**
@@ -34,32 +33,67 @@ module.exports = function(input, output) {
     const footer = originalCode.substr(endPos);
     const jsScript = originalCode.substr(startPos + 8, endPos - startPos - 8);
     const originalAst = recast.parse(jsScript, {
-        parser: tsParser,
+        parser: {
+            parse(source, options) {
+                return parser.parse(source, Object.assign(options, {
+                    plugins: [
+                        'estree',
+                        'decorators-legacy',
+                    ],
+                    tokens: true,
+                }))
+            },
+        },
+        tabWidth: 4,
     });
-    const generatedAst = recast.parse('');
+    const generatedAst = recast.parse('', {
+        tabWidth: 4,
+    });
 
+    const importDeclarations = [];
     const {
-        list: methods,
-        factory: extractMethods,
-    } = extractPropertyFromObject('methods', getValueWithAddId);
+        result: name,
+        factory: extractName,
+    } = extractExportDefault('name', asOriginal);
+    const {
+        result: componentList,
+        factory: extraComponent,
+    } = extractExportDefault('components', asOriginal);
+    const {
+        result: dataFunc,
+        factory: extractData,
+    } = extractExportDefault('data', asOriginal);
     const {
         result: computed,
         factory: extractComputed,
     } = extractExportDefault('computed', asOriginal);
     const {
-        result: name,
-        factory: extractName,
-    } = extractExportDefault('name', asOriginal);
+        result: watchList,
+        factory: extraWatch,
+    } = extractExportDefault('watch', asPropertiesInObject);
+    const {
+        list: methods,
+        factory: extractMethods,
+    } = extractPropertyFromObject('methods', getValueWithAddId);
 
     recast.visit(originalAst, {
+        // 处理import
+        visitImportDeclaration(d) {
+            importDeclarations.push(d.value);
+            this.traverse(d);
+        },
         visitProperty(p) {
-            extractMethods(p);
             extractName(p);
+            extraComponent(p);
+            extractData(p);
             extractComputed(p);
+            extraWatch(p);
+            extractMethods(p);
             this.traverse(p);
         },
     });
 
+    /** 类名，大写开头 */
     const className = name.value.value.value;
     const computedDefinitions = computed.value.value.properties.map((property) => {
         // console.log(property);
@@ -97,12 +131,59 @@ module.exports = function(input, output) {
         declaration.accessibility = 'public';
         return declaration;
     });
-    // console.log('target12', computedDefinitions.flat().length);
-    // 定义class
-    const clazzDecorator = b.decorator(b.objectExpression([b.property('init', b.identifier('name'), b.literal(className))]));
-    const clazz = b.classDeclaration(b.identifier(className), b.classBody([...computedDefinitions.flat(), ...methodDefinitions]), b.identifier('Vue'));
+    // 为所有的function添加property
+    const watchDefinitions = watchList.value.map(property => {
+        const propertyKey = property.key;
+        const propertyName = propertyKey.type === 'Identifier' ? propertyKey.name : propertyKey.value;
+        const method = property.value;
+        // todo: 需要修改函数的名字
+        console.log(property.key);
+        const declaration = b.tsDeclareMethod(b.identifier('on' + camelCaseWithDollar(propertyName) + 'Change'), method.params);
+        declaration.kind = 'method'; // 是一个正常函数
+        declaration.async = method.async; // 是否async
+        declaration.value = method; // 函数体内容
+        declaration.accessibility = 'public';
+        declaration.decorators = [
+            b.decorator(b.callExpression(b.identifier('Watch'), [
+                b.literal(propertyName),
+            ])),
+        ];
+        return declaration;
+    });
 
-    generatedAst.program.body.push(clazzDecorator, clazz);
-    const code = recast.print(generatedAst).code;
-    console.log(code);
+    // 定义class
+    const clazz = b.classDeclaration(
+        b.identifier(className),
+        b.classBody([
+            ...computedDefinitions.flat(),
+            ...watchDefinitions,
+            ...methodDefinitions,
+        ]),
+        b.identifier('Vue')
+    );
+    clazz.decorators = [
+        b.decorator(
+            b.callExpression(
+                b.identifier('Component'),
+                [
+                    b.objectExpression([
+                        b.property('init', b.identifier('name'), b.literal(className)),
+                        componentList.value,
+                    ]),
+                ],
+            )
+        )
+    ];
+    const exportDefault = b.exportDefaultDeclaration(clazz);
+
+    // 处理vue-property-decorator
+    const importFromVPD = importFromVuePropertyDecorator([
+        watchList.value.length > 0 ? 'Watch' : null,
+    ]);
+
+    generatedAst.program.body.push(...importDeclarations, importFromVPD);
+    generatedAst.program.body.push(exportDefault);
+    const code = header + '\n' + recast.print(generatedAst).code + '\n' + footer;
+    
+    fs.writeFileSync(output, code);
 }

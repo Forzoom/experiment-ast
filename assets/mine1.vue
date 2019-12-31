@@ -130,7 +130,7 @@
         <NewTab :selected="4"></NewTab>
     </div>
 </template>
-<script>
+<script lang="ts">
 import {
     ID_MINE,
 } from '@/lib/mta.js';
@@ -155,131 +155,113 @@ import {
     registerShare,
 } from '@/lib/utils';
 
-export default {
-    name: 'Mine',
-    components: {
-        NewTab,
-        Item,
-    },
-    computed: {
-        ...mapState({
-            /** 个人基础信息 */
-            userBasicInfo: state => state.util.userBasicInfo,
-            /** 个人账户 */
-            userAccount: state => state.user.userAccount,
-            /** 是否有未读礼品 */
-            hasUnreadGiftOrder: state => state.gift.hasUnreadGiftOrder,
-        }),
-    },
-    watch: {
-        '$props.value'() {
-            console.log('test');
-        },
-    },
-    methods: {
-        myEquipment() {
-            window.location.href = SHOP_ORDER_URL;
-        },
-        myGift() {
-            this.$router.push({
-                name: ROUTE_NAME.GIFT_ORDER,
-            });
-        },
-        myAddress() {
-            this.$router.push({
-                name: ROUTE_NAME.GIFT_ADDRESS,
-            });
-        },
-        myCrowdfounding() {
-            clickStat(ID_MINE, { crowd: true, });
-            this.$router.push({ name: ROUTE_NAME.CROWD_LIST, });
-        },
-        myOrder() {
-            clickStat(ID_MINE, { order: true, });
-            this.$router.push({
-                name: ROUTE_NAME.ORDER_LIST,
-            });
-        },
-        mypoints() {
-            clickStat(ID_MINE, { fund: true, });
-            this.$router.push({
-                name: 'user_account',
-            });
-        },
-        /**
-         * 点击代金券
-         */
-        myVoucher() {
-            clickStat(ID_MINE, { coupon: true, });
-            this.$router.push({ name: ROUTE_NAME.VOUCHER, });
-        },
-        myDynamic() {
-            clickStat(ID_MINE, { dynamic: true, });
-            this.$router.push({ name: 'dynamic', });
-        },
-        matchRecord() {
-            clickStat(ID_MINE, { record: true, });
-            this.$router.push({
-                name: 'matchRecord',
-            });
-        },
-        feedback() {
-            clickStat(ID_MINE, { problem: true, });
-            this.$router.push({
-                name: ROUTE_NAME.FEEDBACK,
-            });
-        },
-        phoneBinding() {
-            clickStat(ID_MINE, { tel: true, });
-            if (!this.userBasicInfo.mobile_bound) {
-                this.$router.push({
-                    name: ROUTE_NAME.PHONE_BINDING,
-                });
-            } else {
-                this.$router.push({
-                    name: ROUTE_NAME.PHONE_REBINDING,
-                });
-            }
-        },
-        /**
-         * 点击“我的支持”
-         */
-        mySupport() {
-            clickStat(ID_MINE, { supported: true, });
-            this.$router.push({
-                name: 'supported',
-            });
-        },
-    },
-    async beforeRouteEnter(to, from, next) {
-        store.commit('startRequest');
-        await Promise.all([
-            store.dispatch('getUserAccountInfo', {
-                forceUpdate: true,
-            }),
-            store.dispatch('gift/getHasUnreadGiftOrder'),
-        ]);
-        store.commit('endRequest');
-        next();
-    },
-    created() {
-        store.commit('addJSSDKReadyCallback', () => {
-            registerShare({
-                title: '个人中心', // 分享标题
-                desc: '一生必走的9大路线', // 分享描述
-                link: {
-                    query: {
-                        referrer: this.userBasicInfo.id,
-                    },
-                    path: {
-                        name: ROUTE_NAME.USER_HOME,
-                    },
-                },
-                imgUrl: LOGO, // 分享图标
-            });
-        });
-    },
-};
+import { Component, Vue, Watch } from "vue-property-decorator";
+
+@Component({
+  name: "Mine",
+
+  components: {
+      NewTab,
+      Item,
+  }
+})
+export default class Mine extends Vue {
+  public get userBasicInfo() {
+    return store.state.util.userBasicInfo;
+  }
+
+  public get userAccount() {
+    return store.state.user.userAccount;
+  }
+
+  public get hasUnreadGiftOrder() {
+    return store.state.gift.hasUnreadGiftOrder;
+  }
+
+  @Watch("$props.value")
+  public onPropsValueChange() {
+      console.log('test');
+  }
+
+  public myEquipment() {
+      window.location.href = SHOP_ORDER_URL;
+  }
+
+  public myGift() {
+      this.$router.push({
+          name: ROUTE_NAME.GIFT_ORDER,
+      });
+  }
+
+  public myAddress() {
+      this.$router.push({
+          name: ROUTE_NAME.GIFT_ADDRESS,
+      });
+  }
+
+  public myCrowdfounding() {
+      clickStat(ID_MINE, { crowd: true, });
+      this.$router.push({ name: ROUTE_NAME.CROWD_LIST, });
+  }
+
+  public myOrder() {
+      clickStat(ID_MINE, { order: true, });
+      this.$router.push({
+          name: ROUTE_NAME.ORDER_LIST,
+      });
+  }
+
+  public mypoints() {
+      clickStat(ID_MINE, { fund: true, });
+      this.$router.push({
+          name: 'user_account',
+      });
+  }
+
+  public myVoucher() {
+      clickStat(ID_MINE, { coupon: true, });
+      this.$router.push({ name: ROUTE_NAME.VOUCHER, });
+  }
+
+  public myDynamic() {
+      clickStat(ID_MINE, { dynamic: true, });
+      this.$router.push({ name: 'dynamic', });
+  }
+
+  public matchRecord() {
+      clickStat(ID_MINE, { record: true, });
+      this.$router.push({
+          name: 'matchRecord',
+      });
+  }
+
+  public feedback() {
+      clickStat(ID_MINE, { problem: true, });
+      this.$router.push({
+          name: ROUTE_NAME.FEEDBACK,
+      });
+  }
+
+  public phoneBinding() {
+      clickStat(ID_MINE, { tel: true, });
+      if (!this.userBasicInfo.mobile_bound) {
+          this.$router.push({
+              name: ROUTE_NAME.PHONE_BINDING,
+          });
+      } else {
+          this.$router.push({
+              name: ROUTE_NAME.PHONE_REBINDING,
+          });
+      }
+  }
+
+  public mySupport() {
+      clickStat(ID_MINE, { supported: true, });
+      this.$router.push({
+          name: 'supported',
+      });
+  }
+}
 </script>
 <style lang="less">
     @import '../../lib/style/mixins.less';

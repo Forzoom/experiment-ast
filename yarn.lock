@@ -2,10 +2,15 @@
 # yarn lockfile v1
 
 
-"@typescript-eslint/typescript-estree@^2.12.0":
-  version "2.12.0"
-  resolved "https://registry.npm.taobao.org/@typescript-eslint/typescript-estree/download/@typescript-eslint/typescript-estree-2.12.0.tgz#bd9e547ccffd17dfab0c3ab0947c80c8e2eb914c"
-  integrity sha1-vZ5UfM/9F9+rDDqwlHyAyOLrkUw=
+"@babel/parser@^7.7.7":
+  version "7.7.7"
+  resolved "https://registry.npm.taobao.org/@babel/parser/download/@babel/parser-7.7.7.tgz?cache=0&sync_timestamp=1576716816884&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40babel%2Fparser%2Fdownload%2F%40babel%2Fparser-7.7.7.tgz#1b886595419cf92d811316d5b715a53ff38b4937"
+  integrity sha1-G4hllUGc+S2BExbVtxWlP/OLSTc=
+
+"@typescript-eslint/typescript-estree@^2.12.1-alpha.26":
+  version "2.12.1-alpha.26"
+  resolved "https://registry.npm.taobao.org/@typescript-eslint/typescript-estree/download/@typescript-eslint/typescript-estree-2.12.1-alpha.26.tgz#ba3f581a6e88f773cb8fae86d38e5a38f1729938"
+  integrity sha1-uj9YGm6I93PLj66G045aOPFymTg=
   dependencies:
     debug "^4.1.1"
     eslint-visitor-keys "^1.1.0"
@@ -168,10 +173,10 @@ tsutils@^3.17.1:
   dependencies:
     tslib "^1.8.1"
 
-typescript@3.2.1:
-  version "3.2.1"
-  resolved "https://registry.npm.taobao.org/typescript/download/typescript-3.2.1.tgz?cache=0&sync_timestamp=1576739769104&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Ftypescript%2Fdownload%2Ftypescript-3.2.1.tgz#0b7a04b8cf3868188de914d9568bd030f0c56192"
-  integrity sha1-C3oEuM84aBiN6RTZVovQMPDFYZI=
+typescript@^3.7.4:
+  version "3.7.4"
+  resolved "https://registry.npm.taobao.org/typescript/download/typescript-3.7.4.tgz#1743a5ec5fef6a1fa9f3e4708e33c81c73876c19"
+  integrity sha1-F0Ol7F/vah+p8+RwjjPIHHOHbBk=
 
 wrappy@1:
   version "1.0.2"

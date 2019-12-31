@@ -12,7 +12,7 @@ const {
     exportDefaultM,
     asPropertySignature,
     extractPropertyFromObject,
-    camcelCaseWithFirstLetter,
+    camelCaseWithFirstLetter,
 } = require('./utils');
 
 /**
@@ -30,7 +30,7 @@ module.exports = function(input, output) {
         parser: tsParser,
     });
     const generatedAst = recast.parse(''); // program这个内容，但是没有body，在body中会有ImportDeclaration和ExportDefaultDeclaration内容
-    const interfaceName = camcelCaseWithFirstLetter(fileName) + 'State';
+    const interfaceName = camelCaseWithFirstLetter(fileName) + 'State';
     const importDeclarations = [];
     const {
         list: interfacePropertyList,

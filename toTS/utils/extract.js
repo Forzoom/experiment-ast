@@ -16,6 +16,9 @@ exports.getValueWithAddId = function(p) {
     p.value.value.id = b.identifier(p.value.key.name);
     return p.value.value;
 }
+exports.asPropertiesInObject = function(p) {
+    return p.value.value.properties;
+}
 
 /**
  * 使用闭包形式
@@ -65,7 +68,6 @@ exports.extractExportDefault = function(name, cb) {
                         if (parentPath2) { // ExportDefaultDeclaration
                             const parentPath3 = parentPath2.parentPath;
                             if (parentPath3 && parentPath3.value.type === 'ExportDefaultDeclaration' && p.value.key.name === name) {
-                                console.log(cb(p));
                                 result.value = cb(p);
                             }
                         }
