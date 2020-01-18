@@ -149,16 +149,23 @@ module.exports = function(input, output) {
             if (property.type === 'SpreadElement') {
                 const result = [];
                 if (property.argument.type === 'CallExpression') {
+                    if (input == '/Volumes/Repo2/repo/vue/tourye_web_ts/src/pages/crowd/crowdFundingOrder.vue') {
+                        console.log('target1', property.argument.arguments);
+                    }
                     for (const argument of property.argument.arguments) {
-                        // 这是所有的内容
-                        for (const property of argument.properties) {
-                            const declaration = b.tsDeclareMethod(property.key, []);
-                            declaration.kind = 'get';
-                            declaration.async = property.async;
-                            const returnStatement = b.returnStatement(addStore(property.value.body));
-                            declaration.value = b.functionExpression(property.key, [], b.blockStatement([returnStatement]));
-                            declaration.accessibility = 'public';
-                            result.push(declaration);
+                        if (argument.type === 'Literal') {
+                            // todo: 需要进行特别处理
+                        } else if (argument.type === 'ObjectExpression') {
+                            // 这是所有的内容
+                            for (const property of argument.properties) {
+                                const declaration = b.tsDeclareMethod(property.key, []);
+                                declaration.kind = 'get';
+                                declaration.async = property.async;
+                                const returnStatement = b.returnStatement(addStore(property.value.body));
+                                declaration.value = b.functionExpression(property.key, [], b.blockStatement([returnStatement]));
+                                declaration.accessibility = 'public';
+                                result.push(declaration);
+                            }
                         }
                     }
                 }
