@@ -161,6 +161,16 @@ export default {
         NewTab,
         Item,
     },
+    props: {
+        test: {
+            type: String,
+        },
+    },
+    data() {
+        return {
+            a: 'a',
+        };
+    },
     computed: {
         ...mapState({
             /** 个人基础信息 */
@@ -170,6 +180,9 @@ export default {
             /** 是否有未读礼品 */
             hasUnreadGiftOrder: state => state.gift.hasUnreadGiftOrder,
         }),
+        test() {
+            return '1';
+        },
     },
     watch: {
         '$props.value'() {

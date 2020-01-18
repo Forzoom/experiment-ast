@@ -155,7 +155,7 @@ import {
     registerShare,
 } from '@/lib/utils';
 
-import { Component, Vue, Watch } from "vue-property-decorator";
+import { Component, Vue, Prop, Watch } from "vue-property-decorator";
 
 @Component({
   name: "Mine",
@@ -166,6 +166,13 @@ import { Component, Vue, Watch } from "vue-property-decorator";
   }
 })
 export default class Mine extends Vue {
+  @Prop({
+      type: String,
+  })
+  public test;
+
+  public a = 'a';
+
   public get userBasicInfo() {
     return store.state.util.userBasicInfo;
   }
@@ -176,6 +183,10 @@ export default class Mine extends Vue {
 
   public get hasUnreadGiftOrder() {
     return store.state.gift.hasUnreadGiftOrder;
+  }
+
+  public get test() {
+      return '1';
   }
 
   @Watch("$props.value")

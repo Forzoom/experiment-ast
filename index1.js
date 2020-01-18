@@ -5,7 +5,6 @@ const SourceMapConsumer = sourceMap.SourceMapConsumer;
 const fs = require('fs');
 const generatedCode = fs.readFileSync('./assets/app.2a38f758.js', 'utf-8');
 const sourceMapContent = JSON.parse(fs.readFileSync('./assets/app.2a38f758.js.map', 'utf-8'));
-console.log(generatedCode);
 const ast = recast.parse(generatedCode);
 
 (async () => {
@@ -27,47 +26,6 @@ const ast = recast.parse(generatedCode);
     consumer.destroy();
 
     recast.visit(ast, {
-        // 处理函数声明
-        // visitFunctionDeclaration(functionDeclaration) {
-        //     // 对于id进行处理
-        //     const id = functionDeclaration.value.id;
-        //     const start = id.loc.start;
-        //     const key = start.line + '_' + start.column;
-        //     if (generatedMap[key]) {
-        //         const m = generatedMap[key];
-        //         delete generatedMap[key];
-        //         id.name = m.name;
-        //     }
-            
-        //     // 对于param进行处理
-        //     const params = functionDeclaration.value.params;
-        //     if (params) {
-        //         params.forEach(param => {
-        //             const start = param.loc.start;
-        //             const key = start.line + '_' + start.column;
-        //             if (generatedMap[key]) {
-        //                 const m = generatedMap[key];
-        //                 delete generatedMap[key]
-        //                 param.name = m.name;
-        //             }
-        //         });
-        //     }
-
-        //     // 需要对于body中的内容进行处理
-        //     this.traverse(functionDeclaration);
-        // },
-        // visitVariableDeclarator(nodePath) {
-        //     const id = nodePath.value.id;
-        //     const start = id.loc.start;
-        //     const key = start.line + '_' + start.column;
-        //     if (generatedMap[key]) {
-        //         const m = generatedMap[key];
-        //         delete generatedMap[key];
-        //         id.name = m.name;
-        //     }
-        //     // 如果return false的情况下，是否不会继续处理其中的内容
-        //     this.traverse(nodePath);
-        // },
         visitBlockStatement(stmt) {
             const body = stmt.value.body;
             if (body) {
@@ -119,4 +77,23 @@ const ast = recast.parse(generatedCode);
     code = recast.print(ast).code;
 
     fs.writeFileSync(path.join(__dirname, './assets/app.js'), code);
+});
+
+(async () => {
+    let output = false;
+    consumer = await new SourceMapConsumer(sourceMapContent);
+    consumer.eachMapping((item) => {
+        if (output) {
+            return;
+        }
+        output = true;
+        console.log(item);
+    })
+    // 使用consumer就已经足够将内容还原出来，为什么呢?
+    // const result = consumer.sourceContentFor('webpack:///src/store/index.ts');
+    const result = consumer.originalPositionFor({
+        line: 1,
+        column: 13,
+    });
+    console.log(result);
 })();

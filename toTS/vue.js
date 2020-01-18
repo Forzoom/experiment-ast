@@ -21,6 +21,7 @@ const {
  * 对于vue文件进行处理
  */
 module.exports = function(input, output) {
+    console.log(input, output);
     const extname = path.extname(input);
     if (extname !== '.vue') {
         console.warn(input + ' isnt a vue file');
@@ -28,6 +29,10 @@ module.exports = function(input, output) {
     }
     const originalCode = fs.readFileSync(input, 'utf-8');
     const startPos = originalCode.indexOf('<script>');
+    if (startPos < 0) {
+        console.warn(input + ' script is lost');
+        return;
+    }
     const endPos = originalCode.indexOf('</script>');
     const header = originalCode.substr(0, startPos) + '<script lang="ts">';
     const footer = originalCode.substr(endPos);
@@ -60,6 +65,10 @@ module.exports = function(input, output) {
         factory: extraComponent,
     } = extractExportDefault('components', asOriginal);
     const {
+        result: props,
+        factory: extractProps,
+    } = extractExportDefault('props', asOriginal);
+    const {
         result: dataFunc,
         factory: extractData,
     } = extractExportDefault('data', asOriginal);
@@ -85,6 +94,7 @@ module.exports = function(input, output) {
         visitProperty(p) {
             extractName(p);
             extraComponent(p);
+            extractProps(p);
             extractData(p);
             extractComputed(p);
             extraWatch(p);
@@ -93,37 +103,79 @@ module.exports = function(input, output) {
         },
     });
 
+    if (!name.value) {
+        console.warn(input + ' lost name');
+        return;
+    }
+
     /** 类名，大写开头 */
     const className = name.value.value.value;
-    const computedDefinitions = computed.value.value.properties.map((property) => {
-        // console.log(property);
-        if (property.type === 'SpreadElement') {
-            const result = [];
-            if (property.argument.type === 'CallExpression') {
-                for (const argument of property.argument.arguments) {
-                    // 这是所有的内容
-                    for (const property of argument.properties) {
-                        const declaration = b.tsDeclareMethod(property.key, []);
-                        declaration.kind = 'get';
-                        declaration.async = property.async;
-                        const returnStatement = b.returnStatement(addStore(property.value.body));
-                        declaration.value = b.functionExpression(property.key, [], b.blockStatement([returnStatement]));
-                        declaration.accessibility = 'public';
-                        result.push(declaration);
+
+    // 处理props
+    let propDefinitions = [];
+    // 如果存在props
+    if (props.value) {
+        const objectExpression = props.value.value;
+        propDefinitions = objectExpression.properties.map(property => {
+            const definition = b.classProperty(property.key, null);
+            definition.accessibility = 'public';
+            definition.decorators = [
+                b.decorator(b.callExpression(b.identifier('Prop'), [
+                    property.value,
+                ]))
+            ];
+            return definition;
+        });
+    }
+
+    // 处理data
+    let dataDefinitions = [];
+    if (dataFunc.value) {
+        const returnStatement = dataFunc.value.value.body.body[0];
+        const objectExpression = returnStatement.argument;
+        const properties = objectExpression.properties;
+        dataDefinitions = properties.map(property => {
+            const definition = b.classProperty(property.key, property.value);
+            definition.accessibility = 'public';
+            definition.value = property.value;
+            return definition;
+        });
+    }
+
+    // 处理computed
+    let computedDefinitions = [];
+    if (computed.value) {
+        computedDefinitions = computed.value.value.properties.map((property) => {
+            if (property.type === 'SpreadElement') {
+                const result = [];
+                if (property.argument.type === 'CallExpression') {
+                    for (const argument of property.argument.arguments) {
+                        // 这是所有的内容
+                        for (const property of argument.properties) {
+                            const declaration = b.tsDeclareMethod(property.key, []);
+                            declaration.kind = 'get';
+                            declaration.async = property.async;
+                            const returnStatement = b.returnStatement(addStore(property.value.body));
+                            declaration.value = b.functionExpression(property.key, [], b.blockStatement([returnStatement]));
+                            declaration.accessibility = 'public';
+                            result.push(declaration);
+                        }
                     }
                 }
+                return result;
+            } else if (property.type === 'Property') {
+                const functionExpression = property.value;
+                const declaration = b.tsDeclareMethod(property.key, functionExpression.params);
+                declaration.kind = 'get';
+                declaration.async = functionExpression.async;
+                declaration.value = functionExpression;
+                declaration.accessibility = 'public';
+                return declaration;
             }
-            return result;
-        } else if (property.type === 'FunctionExpression') {
-            const declaration = b.tsDeclareMethod(property.id, property.params);
-            declaration.kind = 'get';
-            declaration.async = property.async;
-            declaration.value = property;
-            declaration.accessibility = 'public';
-            return declaration;
-        }
-    });
-    const methodDefinitions = methods.map(method => {
+        }).filter(_ => _);
+    }
+
+    const methodDefinitions= methods.map(method => {
         const declaration = b.tsDeclareMethod(method.id, method.params);
         declaration.kind = 'method';
         declaration.async = method.async;
@@ -131,30 +183,35 @@ module.exports = function(input, output) {
         declaration.accessibility = 'public';
         return declaration;
     });
-    // 为所有的function添加property
-    const watchDefinitions = watchList.value.map(property => {
-        const propertyKey = property.key;
-        const propertyName = propertyKey.type === 'Identifier' ? propertyKey.name : propertyKey.value;
-        const method = property.value;
-        // todo: 需要修改函数的名字
-        console.log(property.key);
-        const declaration = b.tsDeclareMethod(b.identifier('on' + camelCaseWithDollar(propertyName) + 'Change'), method.params);
-        declaration.kind = 'method'; // 是一个正常函数
-        declaration.async = method.async; // 是否async
-        declaration.value = method; // 函数体内容
-        declaration.accessibility = 'public';
-        declaration.decorators = [
-            b.decorator(b.callExpression(b.identifier('Watch'), [
-                b.literal(propertyName),
-            ])),
-        ];
-        return declaration;
-    });
+
+    // 处理watch
+    let watchDefinitions = []
+    if (watchList.value) {
+        watchDefinitions = watchList.value.map(property => {
+            const propertyKey = property.key;
+            const propertyName = propertyKey.type === 'Identifier' ? propertyKey.name : propertyKey.value;
+            const method = property.value;
+            // todo: 需要修改函数的名字
+            const declaration = b.tsDeclareMethod(b.identifier('on' + camelCaseWithDollar(propertyName) + 'Change'), method.params);
+            declaration.kind = 'method'; // 是一个正常函数
+            declaration.async = method.async; // 是否async
+            declaration.value = method; // 函数体内容
+            declaration.accessibility = 'public';
+            declaration.decorators = [
+                b.decorator(b.callExpression(b.identifier('Watch'), [
+                    b.literal(propertyName),
+                ])),
+            ];
+            return declaration;
+        });
+    }
 
     // 定义class
     const clazz = b.classDeclaration(
         b.identifier(className),
         b.classBody([
+            ...propDefinitions,
+            ...dataDefinitions,
             ...computedDefinitions.flat(),
             ...watchDefinitions,
             ...methodDefinitions,
@@ -168,8 +225,8 @@ module.exports = function(input, output) {
                 [
                     b.objectExpression([
                         b.property('init', b.identifier('name'), b.literal(className)),
-                        componentList.value,
-                    ]),
+                        componentList.value
+                    ].filter(_ => _)),
                 ],
             )
         )
@@ -178,7 +235,8 @@ module.exports = function(input, output) {
 
     // 处理vue-property-decorator
     const importFromVPD = importFromVuePropertyDecorator([
-        watchList.value.length > 0 ? 'Watch' : null,
+        props.value && props.value.value.properties.length > 0 ? 'Prop' : null,
+        watchList.value && watchList.value.length > 0 ? 'Watch' : null,
     ]);
 
     generatedAst.program.body.push(...importDeclarations, importFromVPD);
