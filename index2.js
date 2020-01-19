@@ -16,7 +16,7 @@ const featureDir = dir + '/features';
 const pageDir = dir + '/pages';
 const storeDir = dir + '/store';
 const queue = [ pageDir ];
-const throttle = 500; // 最多处理文件数量
+const throttle = 20; // 最多处理文件数量
 let count = 0;
 
 // 深度优先搜索

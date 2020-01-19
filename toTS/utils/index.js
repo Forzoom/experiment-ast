@@ -37,16 +37,31 @@ exports.camelCaseWithDollar = (str) => {
     }
     return str.split('.').map(part => camelCaseWithFirstLetter(part)).join('');
 }
-exports.addStore = function(memberExpression) {
-    let exp = memberExpression;
-    let parent = null;
-    while (exp.object.type === 'MemberExpression') {
-        parent = exp;
-        exp = exp.object;
+// 解析
+exports.parseMemberExpression = function(exp) {
+    if (exp.type !== 'MemberExpression') {
+        console.error(exp, ' is not a MemberExpression');
+        return;
     }
-    // 这是exp.type是identifier
-    parent.object = b.memberExpression(b.identifier('store'), exp, false);
-    return memberExpression;
+    const result = [ exp.property.name ];
+    let _exp = exp;
+    while (_exp.object.type === 'MemberExpression') {
+        _exp = _exp.object;
+        result.unshift(_exp.property.name);
+    }
+    result.unshift(_exp.object.name);
+    return result;
+}
+
+exports.formatMemberExpression = function(list) {
+    console.log(list);
+    const last = list.pop();
+    let exp = b.identifier(last);
+    for (let i = list.length - 1; i >= 0; i--) {
+        const name = list[i];
+        exp = b.memberExpression(b.identifier(name), exp, false);
+    }
+    return exp;
 }
 
 module.exports = {
