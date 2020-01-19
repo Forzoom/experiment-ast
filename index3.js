@@ -1,26 +1,26 @@
 const recast = require('recast');
-const parser = require('@babel/parser');
+const babelParser = require('@babel/parser');
+const tsParser = require('@typescript-eslint/typescript-estree');
 // 问题在于esprima无法识别decorator
 const code = [
-    '@Test()',
-    'class Test {',
-    '',
+    'class T {',
+    ' public a() {}',
     '}',
 ].join('\n');
 
 const ast = recast.parse(code, {
-    parser: {
-        parse(source, options) {
-            return parser.parse(source, Object.assign(options, {
-                plugins: [
-                    'estree',
-                    'decorators-legacy',
-                ],
-                tokens: true,
-            }))
-        },
-    },
+    parser: tsParser,
+    // parser: {
+    //     parse(source, options) {
+    //         return babelParser.parse(source, Object.assign(options, {
+    //             plugins: [
+    //                 'estree',
+    //                 'decorators-legacy',
+    //                 'classProperties',
+    //             ],
+    //             tokens: true,
+    //         }))
+    //     },
+    // },
 });
-console.log(ast.program.body[0].decorators[0]);
-
-console.log(recast.print(ast).code);
+console.log(ast.program.body[0].body.body);

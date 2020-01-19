@@ -1,28 +1,104 @@
-const recast = require('recast');
-const fs = require('fs');
-const path = require('path');
+import recast from 'recast';
+import fs from 'fs';
+import path from 'path';
 // 尝试自定义扩展ast-types的定义
-const { Type, builtInTypes, builders: b, finalize } = require('ast-types');
-const { def } = Type;
-const { string } = builtInTypes;
-const parser = require('@babel/parser');
-const {
+import { Type, builtInTypes, builders as b, finalize, namedTypes } from 'ast-types';
+import parser from '@babel/parser';
+import {
     extractPropertyFromObject,
     asOriginal,
     asPropertiesInObject,
     getValueWithAddId,
     extractExportDefault,
-    unshiftProperty,
     parseMemberExpression,
     formatMemberExpression,
     importFromVuePropertyDecorator,
     camelCaseWithDollar,
-} = require('./utils');
+    any,
+} from './utils';
+const { def } = Type;
+const { string } = builtInTypes;
+
+function handleProp(props: namedTypes.Property) {
+    const objectExpression = props.value as namedTypes.ObjectExpression;
+    return objectExpression.properties.map((property: namedTypes.ObjectProperty) => {
+        const definition = b.classProperty(property.key, null);
+        definition.access = 'public';
+        definition.decorators = [
+            b.decorator(b.callExpression(b.identifier('Prop'), [
+                property.value as namedTypes.ObjectExpression,
+            ]))
+        ];
+        return definition;
+    });
+}
+
+function handleData(data: namedTypes.Property) {
+    const functionExpression = data.value as namedTypes.FunctionExpression;
+    const returnStatement = functionExpression.body.body[0] as namedTypes.ReturnStatement;
+    const objectExpression = returnStatement.argument as namedTypes.ObjectExpression;
+    const properties = objectExpression.properties;
+    return properties.map((property: namedTypes.ObjectProperty) => {
+        const definition = b.classProperty(property.key, property.value as namedTypes.PrimitiveLiteral, any());
+        definition.access = 'public';
+        return definition;
+    });
+}
+
+function handleComputed(computed: namedTypes.Property) {
+    const objectExpression = computed.value as namedTypes.ObjectExpression;
+    return objectExpression.properties.map((property: namedTypes.Property | namedTypes.SpreadElement) => {
+        if (property.type === 'SpreadElement') {
+            const result = [];
+            if (property.argument.type === 'CallExpression') {
+                let namespace = [];
+                for (const argument of property.argument.arguments) {
+                    if (argument.type === 'Literal') {
+                        namespace = (argument.value as string).split('/');
+                    } else if (argument.type === 'ObjectExpression') {
+                        // 这是所有的内容
+                        for (const property of argument.properties as namedTypes.ObjectMethod[]) {
+                            const declaration = b.tsDeclareMethod(property.key, []);
+                            declaration.kind = 'get';
+                            declaration.async = property.async;
+                            const list = parseMemberExpression(property.value.body);
+                            const memberExpression = formatMemberExpression([ 'store', 'state' ].concat(namespace).concat(list.slice(1)));
+                            const returnStatement = b.returnStatement(memberExpression);
+                            declaration.value = b.functionExpression(property.key as namedTypes.Identifier, [], b.blockStatement([returnStatement]));
+                            declaration.accessibility = 'public';
+                            result.push(declaration);
+                        }
+                    }
+                }
+            }
+            return result;
+        } else if (property.type === 'Property') {
+            const functionExpression = property.value as namedTypes.FunctionExpression;
+            const declaration = b.tsDeclareMethod(property.key, functionExpression.params);
+            declaration.kind = 'get';
+            declaration.async = functionExpression.async;
+            declaration.value = functionExpression;
+            declaration.accessibility = 'public';
+            return declaration;
+        }
+    }).filter(_ => _);
+}
+
+function handleMethod(methods: namedTypes.ObjectMethod[]) {
+    return methods.map(method => {
+        const functionExpression = b.functionExpression(method.id, method.params, method.body);
+        functionExpression.async = method.async;
+        const declaration = b.methodDefinition('method', method.id, functionExpression);
+        declaration.value = method;
+        declaration.accessibility = 'public';
+        return declaration;
+    })
+}
 
 /**
  * 对于vue文件进行处理
  */
-module.exports = function(input, output) {
+export default function(input: string, output: string) {
     console.log(input, output);
     const extname = path.extname(input);
     if (extname !== '.vue') {
@@ -113,93 +189,39 @@ module.exports = function(input, output) {
     /** 类名，大写开头 */
     const className = name.value.value.value;
 
-    // 处理props
+    // 如果存在props，处理props
     let propDefinitions = [];
-    // 如果存在props
     if (props.value) {
-        const objectExpression = props.value.value;
-        propDefinitions = objectExpression.properties.map(property => {
-            const definition = b.classProperty(property.key, null);
-            definition.accessibility = 'public';
-            definition.decorators = [
-                b.decorator(b.callExpression(b.identifier('Prop'), [
-                    property.value,
-                ]))
-            ];
-            return definition;
-        });
+        propDefinitions = handleProp(props.value as namedTypes.Property);
     }
 
     // 处理data
     let dataDefinitions = [];
     if (dataFunc.value) {
-        const returnStatement = dataFunc.value.value.body.body[0];
-        const objectExpression = returnStatement.argument;
-        const properties = objectExpression.properties;
-        dataDefinitions = properties.map(property => {
-            const definition = b.classProperty(property.key, property.value);
-            definition.accessibility = 'public';
-            definition.value = property.value;
-            return definition;
-        });
+        dataDefinitions = handleData(dataFunc.value as namedTypes.Property);
     }
 
     // 处理computed
     let computedDefinitions = [];
     if (computed.value) {
-        computedDefinitions = computed.value.value.properties.map((property) => {
-            if (property.type === 'SpreadElement') {
-                const result = [];
-                if (property.argument.type === 'CallExpression') {
-                    let namespace = [];
-                    for (const argument of property.argument.arguments) {
-                        if (argument.type === 'Literal') {
-                            namespace = argument.value.split('/');
-                        } else if (argument.type === 'ObjectExpression') {
-                            // 这是所有的内容
-                            for (const property of argument.properties) {
-                                const declaration = b.tsDeclareMethod(property.key, []);
-                                declaration.kind = 'get';
-                                declaration.async = property.async;
-                                const list = parseMemberExpression(property.value.body);
-                                const memberExpression = formatMemberExpression([ 'store', 'state' ].concat(namespace).concat(list.slice(1)));
-                                const returnStatement = b.returnStatement(memberExpression);
-                                declaration.value = b.functionExpression(property.key, [], b.blockStatement([returnStatement]));
-                                declaration.accessibility = 'public';
-                                result.push(declaration);
-                            }
-                        }
-                    }
-                }
-                return result;
-            } else if (property.type === 'Property') {
-                const functionExpression = property.value;
-                const declaration = b.tsDeclareMethod(property.key, functionExpression.params);
-                declaration.kind = 'get';
-                declaration.async = functionExpression.async;
-                declaration.value = functionExpression;
-                declaration.accessibility = 'public';
-                return declaration;
-            }
-        }).filter(_ => _);
+        computedDefinitions = handleComputed(computed.value as namedTypes.Property);
     }
 
-    const methodDefinitions= methods.map(method => {
-        const declaration = b.tsDeclareMethod(method.id, method.params);
-        declaration.kind = 'method';
-        declaration.async = method.async;
-        declaration.value = method;
-        declaration.accessibility = 'public';
-        return declaration;
-    });
+    // 处理method
+    const methodDefinitions = handleMethod(methods);
 
     // 处理watch
     let watchDefinitions = []
     if (watchList.value) {
-        watchDefinitions = watchList.value.map(property => {
+        watchDefinitions = watchList.value.map((property: namedTypes.Property) => {
             const propertyKey = property.key;
-            const propertyName = propertyKey.type === 'Identifier' ? propertyKey.name : propertyKey.value;
-            const method = property.value;
+            let propertyName = '';
+            if (propertyKey.type === 'Identifier') {
+                propertyName = propertyKey.name;
+            } else if (propertyKey.type === 'Literal') {
+                propertyName = propertyKey.value as string;
+            }
+            const method = property.value as namedTypes.FunctionExpression;
             // todo: 需要修改函数的名字
             const declaration = b.tsDeclareMethod(b.identifier('on' + camelCaseWithDollar(propertyName) + 'Change'), method.params);
             declaration.kind = 'method'; // 是一个正常函数

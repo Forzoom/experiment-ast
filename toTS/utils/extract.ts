@@ -1,29 +1,30 @@
-const { builders: b } = require('ast-types');
-const {
+import { builders as b } from 'ast-types';
+import {
     tsPropertySignature,
-} = require('./b');
+} from './b';
 
-exports.asOriginal = function(p) {
+/** 解开一层p，将原本的内容解开 */
+export function asOriginal (p) {
     return p.value;
 }
-exports.asPropertySignature = function(p) {
+export function asPropertySignature (p) {
     return tsPropertySignature(p.value.key.name, 'any');
 }
-exports.withDeclaration = function(p) {
+export function withDeclaration (p) {
     return p.value.declaration;
 }
-exports.getValueWithAddId = function(p) {
+export function getValueWithAddId (p) {
     p.value.value.id = b.identifier(p.value.key.name);
     return p.value.value;
 }
-exports.asPropertiesInObject = function(p) {
+export function asPropertiesInObject (p) {
     return p.value.value.properties;
 }
 
 /**
  * 使用闭包形式
  */
-exports.extractPropertyFromObject = function(name, cb) {
+export function extractPropertyFromObject(name, cb) {
     const list = [];
     return {
         list,
@@ -47,12 +48,12 @@ exports.extractPropertyFromObject = function(name, cb) {
     };
 }
 
-exports.extractExportDefault = function(name, cb) {
+export function extractExportDefault(name, cb) {
     if (!cb) {
         cb = name;
         name = null;
     }
-    const result = {};
+    const result: any = {};
     return {
         result,
         factory(p) {
