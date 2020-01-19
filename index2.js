@@ -1,10 +1,10 @@
-require('./toTS/polyfill');
-const recast = require('recast');
-const tsParser = require('@typescript-eslint/typescript-estree');
-const handleStore = require('./toTS/store');
-const handleVue = require('./toTS/vue');
-const fs = require('fs');
-const path = require('path');
+import './toTS/polyfill.js';
+import recast from 'recast';
+import tsParser from '@typescript-eslint/typescript-estree';
+import handleStore from './dist/store';
+import handleVue from './dist/vue';
+import fs from 'fs';
+import path from 'path';
 
 // handleStore('./assets/address1.js', './assets/address1.ts');
 // handleVue('./assets/mine.vue', './assets/mine1.vue');

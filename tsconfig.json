@@ -10,16 +10,11 @@
       "experimentalDecorators": true,
       "esModuleInterop": true,
       "allowSyntheticDefaultImports": true,
-      "sourceMap": true,
+      "sourceMap": false,
+      "allowJs": true,
       "baseUrl": ".",
       "types": [
-        "webpack-env",
-        "mocha",
-        "chai",
-        "node",
-        "wx-js-sdk-dt",
-        "clipboard",
-        "growing-io"
+        "node"
       ],
       "paths": {
         "@/*": [
@@ -34,14 +29,12 @@
       ]
     },
     "include": [
-      "src/**/*.ts",
-      "src/**/*.tsx",
-      "src/**/*.vue",
-      "tests/**/*.ts",
-      "tests/**/*.tsx", "src/features/activity/carousel/arrayEqual.js", "src/features/activity/carousel/animationFrame.js"
+      "toTS/**/*.ts",
     ],
     "exclude": [
-      "node_modules"
+      "node_modules",
+      "assets",
+      "dist"
     ]
   }
   
