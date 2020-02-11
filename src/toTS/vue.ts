@@ -91,7 +91,7 @@ function handleComputed(computed: namedTypes.Property) {
             const functionExpression = property.value as namedTypes.FunctionExpression;
             const declaration = b.methodDefinition('get', property.key, functionExpression);
             declaration.accessibility = 'public';
-            return declaration;
+            result.push(declaration);
         }
     });
     return result;

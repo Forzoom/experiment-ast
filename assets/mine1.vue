@@ -185,6 +185,10 @@ export default class Mine extends Vue {
     return store.state.gift.hasUnreadGiftOrder;
   }
 
+  public get test() {
+      return '1';
+  }
+
   @Watch("$props.value")
   public onPropsValueChange() {
       console.log('test');
