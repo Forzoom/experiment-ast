@@ -13,10 +13,18 @@ import {
     any,
 } from './utils';
 
+function handleImport(imports: namedTypes.ImportDeclaration[]) {
+    imports.forEach((importDeclaration) => {
+        if (importDeclaration.source.type === 'Literal' && typeof importDeclaration.source.value == 'string') {
+            importDeclaration.source.value = (importDeclaration.source.value as string).replace(/\.js$/, '');
+        }
+    });
+}
+
 function handleProp(props: namedTypes.Property) {
     const objectExpression = props.value as namedTypes.ObjectExpression;
     return (objectExpression.properties as namedTypes.ObjectProperty[]).map((property) => {
-        const definition = b.classProperty(property.key, null);
+        const definition = b.classProperty(property.key, null, any());
         definition.access = 'public';
         definition.decorators = [
             b.decorator(b.callExpression(b.identifier('Prop'), [
@@ -183,6 +191,9 @@ export default function(input: string, output: string) {
         },
     });
 
+    handleImport(importDeclarations);
+    console.info('handle import done!');
+
     if (!name) {
         console.warn(input + ' lost name');
         return;
@@ -214,8 +225,6 @@ export default function(input: string, output: string) {
     // 处理method
     let methodDefinitions: namedTypes.MethodDefinition[] = [];
     if (methods) {
-        // @ts-ignore
-        console.log(methods.value.properties);
         methodDefinitions = handleMethod((methods.value as namedTypes.ObjectExpression).properties as namedTypes.Property[]).filter(_ => _) as namedTypes.MethodDefinition[];
     }
     console.info('handle methods done!');

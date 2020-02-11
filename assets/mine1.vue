@@ -133,7 +133,7 @@
 <script lang="ts">
 import {
     ID_MINE,
-} from '@/lib/mta.js';
+} from "@/lib/mta";
 
 import {
     clickStat,
@@ -149,7 +149,7 @@ import {
     LOGO,
     SHOP_ORDER_URL,
     ROUTE_NAME,
-} from '@/lib/constant.js';
+} from "@/lib/constant";
 
 import {
     registerShare,
@@ -169,7 +169,7 @@ export default class Mine extends Vue {
   @Prop({
       type: String,
   })
-  public test;
+  public test: any;
 
   public a: any = 'a';
 
