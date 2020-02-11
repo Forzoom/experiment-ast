@@ -17,7 +17,7 @@ export function importFromVuePropertyDecorator(extra: Array<string | null>) {
         [
             b.importSpecifier(b.identifier('Component')),
             b.importSpecifier(b.identifier('Vue')),
-            ...extra.filter((_) => _).map((name) => b.importSpecifier(b.identifier(name))),
+            ...extra.filter((_) => _).map((name) => b.importSpecifier(b.identifier(name!))),
         ],
         b.literal('vue-property-decorator'),
     );

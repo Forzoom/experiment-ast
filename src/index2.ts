@@ -1,16 +1,15 @@
-// import './toTS/polyfill';
-// import recast from 'recast';
-// import tsParser from '@typescript-eslint/typescript-estree';
-// import handleStore from './toTS/store';
-// import handleVue from './toTS/vue';
+import './toTS/polyfill';
+import * as recast from 'recast';
+import tsParser from '@typescript-eslint/typescript-estree';
+import handleStore from './toTS/store';
+import handleVue from './toTS/vue';
 import fs from 'fs';
-// import path from 'path';
+import path from 'path';
 
-// console.log(handleStore);
-console.log(fs.readFileSync);
+// console.log(fs.readFileSync);
 
 // handleStore('./assets/address1.js', './assets/address1.ts');
-// handleVue('./assets/mine.vue', './assets/mine1.vue');
+handleVue('./assets/mine.vue', './assets/mine1.vue');
 
 // const dir = '/Volumes/Repo2/repo/vue/tourye_web_ts/src';
 // const dist = '/Volumes/Repo2/repo/vue/tourye_web_ts_ast/src';

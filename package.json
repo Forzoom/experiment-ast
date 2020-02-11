@@ -21,6 +21,6 @@
   },
   "scripts": {
     "build": "webpack --config webpack.config.js",
-    "main": "node ./dist/index2"
+    "main": "node ./dist/bundle.js"
   }
 }

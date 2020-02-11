@@ -1,4 +1,4 @@
-import recast from 'recast';
+import * as recast from 'recast';
 import fs from 'fs';
 import path from 'path';
 import tsParser from '@typescript-eslint/typescript-estree';

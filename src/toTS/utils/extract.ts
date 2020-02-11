@@ -1,4 +1,4 @@
-import recast from 'recast';
+import * as recast from 'recast';
 import { builders as b, namedTypes } from 'ast-types';
 import { NodePath } from 'ast-types/lib/node-path';
 import {

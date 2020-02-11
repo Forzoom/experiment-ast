@@ -22,7 +22,6 @@ export function parseMemberExpression(exp: namedTypes.MemberExpression) {
 }
 
 export function formatMemberExpression(list: string[]) {
-    console.log(list);
     const last = list.pop();
     let exp: any = b.identifier(last!);
     for (let i = list.length - 1; i >= 0; i--) {

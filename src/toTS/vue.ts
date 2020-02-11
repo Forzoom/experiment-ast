@@ -1,9 +1,9 @@
-import recast from 'recast';
+import * as recast from 'recast';
 import fs from 'fs';
 import path from 'path';
 // 尝试自定义扩展ast-types的定义
 import { builders as b, namedTypes } from 'ast-types';
-import parser from '@babel/parser';
+import * as parser from '@babel/parser';
 import {
     Extract,
     parseMemberExpression,
@@ -53,12 +53,23 @@ function handleComputed(computed: namedTypes.Property) {
                     } else if (argument.type === 'ObjectExpression') {
                         // 这是所有的内容
                         for (const property of argument.properties as namedTypes.Property[]) {
-                            const functionExpression = property.value as namedTypes.FunctionExpression;
-                            const list = parseMemberExpression((functionExpression.body.body[0] as namedTypes.ReturnStatement).argument as namedTypes.MemberExpression);
+                            let list: string[] = [];
+                            let async: boolean | undefined = false;
+                            if (property.value.type === 'FunctionExpression') {
+                                const functionExpression = property.value;
+                                list = parseMemberExpression((functionExpression.body.body[0] as namedTypes.ReturnStatement).argument as namedTypes.MemberExpression);
+                                async = functionExpression.async;
+                            } else if (property.value.type === 'ArrowFunctionExpression') {
+                                const arrowFunctionExpression = property.value;
+                                if (arrowFunctionExpression.body.type === 'MemberExpression') {
+                                    list = parseMemberExpression(arrowFunctionExpression.body);
+                                    async = arrowFunctionExpression.async;
+                                }
+                            }
                             const memberExpression = formatMemberExpression([ 'store', 'state' ].concat(namespace).concat(list.slice(1)));
                             const returnStatement = b.returnStatement(memberExpression);
                             const newFunctionExpression = b.functionExpression(property.key as namedTypes.Identifier, [], b.blockStatement([returnStatement]));
-                            newFunctionExpression.async = functionExpression.async;
+                            newFunctionExpression.async = async;
                             const declaration = b.methodDefinition('get', property.key, newFunctionExpression);
                             declaration.kind = 'get';
                             declaration.accessibility = 'public';
@@ -78,15 +89,15 @@ function handleComputed(computed: namedTypes.Property) {
     return result;
 }
 
-function handleMethod(methods: namedTypes.ObjectMethod[]) {
+function handleMethod(methods: namedTypes.Property[]) {
     return methods.map(method => {
-        const functionExpression = b.functionExpression(method.id, method.params, method.body);
-        functionExpression.async = method.async;
-        // @ts-ignore
-        const declaration = b.methodDefinition('method', method.id, functionExpression);
-        declaration.value = method;
-        declaration.accessibility = 'public';
-        return declaration;
+        if (method.value.type === 'FunctionExpression') {
+            const functionExpression = b.functionExpression(method.key as namedTypes.Identifier, method.value.params, method.value.body);
+            functionExpression.async = method.value.async;
+            const declaration = b.methodDefinition('method', method.key as namedTypes.Identifier, functionExpression);
+            declaration.accessibility = 'public';
+            return declaration;
+        }
     })
 }
 
@@ -184,30 +195,37 @@ export default function(input: string, output: string) {
     if (props) {
         propDefinitions = handleProp(props);
     }
+    console.info('handle props done!');
 
     // 处理data
     let dataDefinitions: namedTypes.ClassProperty[] = [];
     if (dataFunc) {
         dataDefinitions = handleData(dataFunc);
     }
+    console.info('handle data done!');
 
     // 处理computed
     let computedDefinitions: namedTypes.MethodDefinition[] = [];
     if (computed) {
         computedDefinitions = handleComputed(computed);
     }
+    console.info('handle computed done!');
 
     // 处理method
-    const methodDefinitions: namedTypes.ObjectMethod[] = [];
+    let methodDefinitions: namedTypes.MethodDefinition[] = [];
     if (methods) {
-        handleMethod((methods.value as namedTypes.ObjectExpression).properties as namedTypes.ObjectMethod[]);
+        // @ts-ignore
+        console.log(methods.value.properties);
+        methodDefinitions = handleMethod((methods.value as namedTypes.ObjectExpression).properties as namedTypes.Property[]).filter(_ => _) as namedTypes.MethodDefinition[];
     }
+    console.info('handle methods done!');
 
     // 处理watch
     let watchDefinitions: namedTypes.TSDeclareMethod[] = []
     if (watchList) {
         watchDefinitions = handleWatch((watchList.value as namedTypes.ObjectExpression).properties as namedTypes.Property[]);
     }
+    console.info('handle watch done!');
 
     // 定义class
     const clazz = b.classDeclaration(

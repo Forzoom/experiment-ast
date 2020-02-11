@@ -3,8 +3,8 @@ const babelParser = require('@babel/parser');
 const tsParser = require('@typescript-eslint/typescript-estree');
 // 问题在于esprima无法识别decorator
 const code = [
-    'export default {',
-    '  name: { a: 1 },',
+    'export default class Test extends Vue {',
+    '  public fn() {}',
     '}',
 ].join('\n');
 
@@ -23,4 +23,4 @@ const ast = recast.parse(code, {
     //     },
     // },
 });
-console.log(ast.program.body[0].declaration.properties[0].value.properties);
+console.log(ast.program.body[0].declaration.body.body);

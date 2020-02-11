@@ -171,7 +171,7 @@ export default class Mine extends Vue {
   })
   public test;
 
-  public a = 'a';
+  public a: any = 'a';
 
   public get userBasicInfo() {
     return store.state.util.userBasicInfo;
@@ -183,10 +183,6 @@ export default class Mine extends Vue {
 
   public get hasUnreadGiftOrder() {
     return store.state.gift.hasUnreadGiftOrder;
-  }
-
-  public get test() {
-      return '1';
   }
 
   @Watch("$props.value")
