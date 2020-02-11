@@ -12,7 +12,7 @@ export const importRootStateFromStoreDTS = b.importDeclaration(
 /**
  * @param extra string[] 所需要引入的内容，例如Prop, Watch
  */
-export function importFromVuePropertyDecorator(extra) {
+export function importFromVuePropertyDecorator(extra: Array<string | null>) {
     return b.importDeclaration(
         [
             b.importSpecifier(b.identifier('Component')),

@@ -1,5 +1,6 @@
 if (!Array.prototype.reduce) {
     Object.defineProperty(Array.prototype, 'reduce', {
+        // @ts-ignore
         value: function (callback /*, initialValue*/) {
             if (this === null) {
                 throw new TypeError('Array.prototype.reduce ' +
@@ -62,6 +63,7 @@ if (!Array.prototype.reduce) {
 if (!Array.prototype.flat) {
     Object.defineProperty(Array.prototype, 'flat', {
         value() {
+            // @ts-ignore
             return this.reduce((acc, val) => Array.isArray(val) ? acc.concat(val.flat()) : acc.concat(val), []);
         },
     });
