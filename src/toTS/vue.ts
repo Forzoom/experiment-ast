@@ -182,6 +182,7 @@ export default function(input: string, output: string) {
     const computed = extract.extractFromExportDefault('computed');
     const watchList = extract.extractFromExportDefault('watch');
     const methods = extract.extractFromExportDefault('methods');
+    const lifecycleDefinitions: namedTypes.MethodDefinition[] = [];
 
     recast.visit(originalAst, {
         // 处理import
@@ -189,6 +190,91 @@ export default function(input: string, output: string) {
             importDeclarations.push(d.value);
             this.traverse(d);
         },
+        // 处理所有的函数参数
+        visitFunctionDeclaration(p) {
+            const functionDeclaration = p.value as namedTypes.FunctionDeclaration;
+            const params = functionDeclaration.params;
+            if (params) {
+                functionDeclaration.params = params.map((param) => {
+                    if (param.type === 'Identifier') {
+                        if (!param.typeAnnotation) {
+                            param.typeAnnotation = any();
+                        }
+                    } else if (param.type === 'ObjectPattern') {
+                        if (!param.typeAnnotation) {
+                            param.typeAnnotation = any();
+                        }
+                    }
+                    
+                    return param;
+                });
+            }
+            this.traverse(p);
+        },
+        visitFunctionExpression(p) {
+            const functionDeclaration = p.value as namedTypes.FunctionExpression;
+            const params = functionDeclaration.params;
+            if (params) {
+                functionDeclaration.params = params.map((param) => {
+                    if (param.type === 'Identifier') {
+                        if (!param.typeAnnotation) {
+                            param.typeAnnotation = any();
+                        }
+                    } else if (param.type === 'ObjectPattern') {
+                        if (!param.typeAnnotation) {
+                            param.typeAnnotation = any();
+                        }
+                    }
+                    
+                    return param;
+                });
+            }
+            this.traverse(p);
+        },
+        visitArrowFunctionExpression(p) {
+            const arrowFunctionExpression = p.value as namedTypes.ArrowFunctionExpression;
+            const params = arrowFunctionExpression.params;
+            if (params) {
+                arrowFunctionExpression.params = params.map((param) => {
+                    if (param.type === 'Identifier') {
+                        if (!param.typeAnnotation) {
+                            param.typeAnnotation = any();
+                        }
+                    } else if (param.type === 'ObjectPattern') {
+                        if (!param.typeAnnotation) {
+                            param.typeAnnotation = any();
+                        }
+                    }
+
+                    return param;
+                });
+            }
+            this.traverse(p);
+        },
+        visitProperty(p) {
+            const property = p.value as namedTypes.Property;
+            if (property.key && property.key.type === 'Identifier') {
+                const name = property.key.name;
+                if ([ 'created', 'mounted', 'beforeDestroy', 'beforeRouteEnter', 'beforeRouteUpdate', 'beforeRouteLeave' ].indexOf(name) >= 0) {
+                    const declaration = b.methodDefinition('method', property.key as namedTypes.Identifier, property.value as namedTypes.FunctionExpression);
+                    declaration.accessibility = 'public';
+                    lifecycleDefinitions.push(declaration);
+                }
+            }
+            this.traverse(p);
+        },
+    });
+
+    const body = originalAst.program.body as namedTypes.Node[];
+    const other: namedTypes.Node[] = [];
+    body.forEach((item) => {
+        if (item.type === 'ImportDeclaration') {
+            // nothing
+        } else if (item.type === 'ExportDefaultDeclaration') {
+            // nothing
+        } else {
+            other.push(item);
+        }
     });
 
     handleImport(importDeclarations);
@@ -245,6 +331,7 @@ export default function(input: string, output: string) {
             ...computedDefinitions.flat(),
             ...watchDefinitions,
             ...methodDefinitions,
+            ...lifecycleDefinitions,
         ]),
         b.identifier('Vue')
     );
@@ -269,7 +356,7 @@ export default function(input: string, output: string) {
         watchDefinitions.length > 0 ? 'Watch' : null,
     ]);
 
-    generatedAst.program.body.push(...importDeclarations, importFromVPD);
+    generatedAst.program.body.push(...importDeclarations, importFromVPD, ...other);
     generatedAst.program.body.push(exportDefault);
     const code = header + '\n' + recast.print(generatedAst).code + '\n' + footer;
     

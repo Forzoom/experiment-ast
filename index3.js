@@ -3,9 +3,8 @@ const babelParser = require('@babel/parser');
 const tsParser = require('@typescript-eslint/typescript-estree');
 // 问题在于esprima无法识别decorator
 const code = [
-    'export default {',
-    '  computed: { fn() {}, }',
-    '}',
+    'function fn1({ a }: any) {}',
+    '(b) => { return b; }',
 ].join('\n');
 
 const ast = recast.parse(code, {
@@ -23,4 +22,4 @@ const ast = recast.parse(code, {
     //     },
     // },
 });
-console.log(ast.program.body[0].declaration.properties[0].value.properties);
+console.log(ast.program.body[0]);

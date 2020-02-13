@@ -18,12 +18,12 @@ const featureDir = dir + '/features';
 const pageDir = dir + '/pages';
 const storeDir = dir + '/store';
 const queue = [ pageDir ];
-const throttle = 20; // 最多处理文件数量
+const throttle = 1; // 最多处理文件数量
 let count = 0;
 
 // 深度优先搜索
 while (queue.length > 0) {
-    if (count > throttle) {
+    if (count >= throttle) {
         throw new Error(`handle over ${throttle} file`);
     }
     const filePath = queue.shift();
