@@ -155,6 +155,7 @@ import {
     registerShare,
 } from '@/lib/utils';
 
+// test
 export default {
     name: 'Mine',
     components: {
@@ -162,12 +163,14 @@ export default {
         Item,
     },
     props: {
-        test: {
+        // test
+        test1: {
             type: String,
         },
     },
     data() {
         return {
+            // test
             a: 'a',
         };
     },
@@ -180,17 +183,20 @@ export default {
             /** 是否有未读礼品 */
             hasUnreadGiftOrder: state => state.gift.hasUnreadGiftOrder,
         }),
+        // test
         test() {
             return '1';
         },
     },
     watch: {
-        '$props.value'() {
+        // test
+        '$props.value'(b) {
             console.log('test');
         },
     },
     methods: {
-        myEquipment() {
+        // test
+        myEquipment(a) {
             window.location.href = SHOP_ORDER_URL;
         },
         myGift() {
@@ -264,6 +270,7 @@ export default {
             });
         },
     },
+    // test
     async beforeRouteEnter(to, from, next) {
         store.commit('startRequest');
         await Promise.all([
@@ -275,6 +282,7 @@ export default {
         store.commit('endRequest');
         next();
     },
+    // test
     created() {
         store.commit('addJSSDKReadyCallback', () => {
             registerShare({

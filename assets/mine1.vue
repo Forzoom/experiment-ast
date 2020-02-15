@@ -155,123 +155,171 @@ import {
     registerShare,
 } from '@/lib/utils';
 
+import { Route } from "vue-router";
 import { Component, Vue, Prop, Watch } from "vue-property-decorator";
 
+// test
 @Component({
-  name: "Mine",
+    name: "Mine",
 
-  components: {
-      NewTab,
-      Item,
-  }
+    components: {
+        NewTab,
+        Item,
+    }
 })
 export default class Mine extends Vue {
-  @Prop({
-      type: String,
-  })
-  public test: any;
+    // test
+    @Prop({
+        type: String,
+    })
+    public test1: any;
 
-  public a: any = 'a';
+    // test
+    public a: any = 'a';
 
-  public get userBasicInfo() {
-    return store.state.util.userBasicInfo;
-  }
+    /** 个人基础信息 */
+    public get userBasicInfo() {
+        return store.state.util.userBasicInfo;
+    }
 
-  public get userAccount() {
-    return store.state.user.userAccount;
-  }
+    /** 个人账户 */
+    public get userAccount() {
+        return store.state.user.userAccount;
+    }
 
-  public get hasUnreadGiftOrder() {
-    return store.state.gift.hasUnreadGiftOrder;
-  }
+    /** 是否有未读礼品 */
+    public get hasUnreadGiftOrder() {
+        return store.state.gift.hasUnreadGiftOrder;
+    }
 
-  public get test() {
-      return '1';
-  }
+    // test
+    public get test() {
+        return '1';
+    }
 
-  @Watch("$props.value")
-  public onPropsValueChange() {
-      console.log('test');
-  }
+    // test
+    @Watch("$props.value")
+    public onPropsValueChange(b: any) {
+        console.log('test');
+    }
 
-  public myEquipment() {
-      window.location.href = SHOP_ORDER_URL;
-  }
+    // test
+    public myEquipment(a: any) {
+        window.location.href = SHOP_ORDER_URL;
+    }
 
-  public myGift() {
-      this.$router.push({
-          name: ROUTE_NAME.GIFT_ORDER,
-      });
-  }
+    public myGift() {
+        this.$router.push({
+            name: ROUTE_NAME.GIFT_ORDER,
+        });
+    }
 
-  public myAddress() {
-      this.$router.push({
-          name: ROUTE_NAME.GIFT_ADDRESS,
-      });
-  }
+    public myAddress() {
+        this.$router.push({
+            name: ROUTE_NAME.GIFT_ADDRESS,
+        });
+    }
 
-  public myCrowdfounding() {
-      clickStat(ID_MINE, { crowd: true, });
-      this.$router.push({ name: ROUTE_NAME.CROWD_LIST, });
-  }
+    public myCrowdfounding() {
+        clickStat(ID_MINE, { crowd: true, });
+        this.$router.push({ name: ROUTE_NAME.CROWD_LIST, });
+    }
 
-  public myOrder() {
-      clickStat(ID_MINE, { order: true, });
-      this.$router.push({
-          name: ROUTE_NAME.ORDER_LIST,
-      });
-  }
+    public myOrder() {
+        clickStat(ID_MINE, { order: true, });
+        this.$router.push({
+            name: ROUTE_NAME.ORDER_LIST,
+        });
+    }
 
-  public mypoints() {
-      clickStat(ID_MINE, { fund: true, });
-      this.$router.push({
-          name: 'user_account',
-      });
-  }
+    public mypoints() {
+        clickStat(ID_MINE, { fund: true, });
+        this.$router.push({
+            name: 'user_account',
+        });
+    }
 
-  public myVoucher() {
-      clickStat(ID_MINE, { coupon: true, });
-      this.$router.push({ name: ROUTE_NAME.VOUCHER, });
-  }
+    /**
+     * 点击代金券
+     */
+    public myVoucher() {
+        clickStat(ID_MINE, { coupon: true, });
+        this.$router.push({ name: ROUTE_NAME.VOUCHER, });
+    }
 
-  public myDynamic() {
-      clickStat(ID_MINE, { dynamic: true, });
-      this.$router.push({ name: 'dynamic', });
-  }
+    public myDynamic() {
+        clickStat(ID_MINE, { dynamic: true, });
+        this.$router.push({ name: 'dynamic', });
+    }
 
-  public matchRecord() {
-      clickStat(ID_MINE, { record: true, });
-      this.$router.push({
-          name: 'matchRecord',
-      });
-  }
+    public matchRecord() {
+        clickStat(ID_MINE, { record: true, });
+        this.$router.push({
+            name: 'matchRecord',
+        });
+    }
 
-  public feedback() {
-      clickStat(ID_MINE, { problem: true, });
-      this.$router.push({
-          name: ROUTE_NAME.FEEDBACK,
-      });
-  }
+    public feedback() {
+        clickStat(ID_MINE, { problem: true, });
+        this.$router.push({
+            name: ROUTE_NAME.FEEDBACK,
+        });
+    }
 
-  public phoneBinding() {
-      clickStat(ID_MINE, { tel: true, });
-      if (!this.userBasicInfo.mobile_bound) {
-          this.$router.push({
-              name: ROUTE_NAME.PHONE_BINDING,
-          });
-      } else {
-          this.$router.push({
-              name: ROUTE_NAME.PHONE_REBINDING,
-          });
-      }
-  }
+    public phoneBinding() {
+        clickStat(ID_MINE, { tel: true, });
+        if (!this.userBasicInfo.mobile_bound) {
+            this.$router.push({
+                name: ROUTE_NAME.PHONE_BINDING,
+            });
+        } else {
+            this.$router.push({
+                name: ROUTE_NAME.PHONE_REBINDING,
+            });
+        }
+    }
 
-  public mySupport() {
-      clickStat(ID_MINE, { supported: true, });
-      this.$router.push({
-          name: 'supported',
-      });
-  }
+    /**
+     * 点击“我的支持”
+     */
+    public mySupport() {
+        clickStat(ID_MINE, { supported: true, });
+        this.$router.push({
+            name: 'supported',
+        });
+    }
+
+    // test
+    public async beforeRouteEnter(to: Route, from: Route, next: any) {
+        store.commit('startRequest');
+        await Promise.all([
+            store.dispatch('getUserAccountInfo', {
+                forceUpdate: true,
+            }),
+            store.dispatch('gift/getHasUnreadGiftOrder'),
+        ]);
+        store.commit('endRequest');
+        next();
+    }
+
+    // test
+    public created() {
+        store.commit('addJSSDKReadyCallback', () => {
+            registerShare({
+                title: '个人中心', // 分享标题
+                desc: '一生必走的9大路线', // 分享描述
+                link: {
+                    query: {
+                        referrer: this.userBasicInfo.id,
+                    },
+                    path: {
+                        name: ROUTE_NAME.USER_HOME,
+                    },
+                },
+                imgUrl: LOGO, // 分享图标
+            });
+        });
+    }
 }
 </script>
 <style lang="less">

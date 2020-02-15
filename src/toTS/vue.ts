@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 // 尝试自定义扩展ast-types的定义
 import { builders as b, namedTypes } from 'ast-types';
+import * as K from 'ast-types/gen/kinds';
 import * as parser from '@babel/parser';
 import {
     Extract,
@@ -13,10 +14,18 @@ import {
     any,
 } from './utils';
 
+const routerLifecycleNames = [ 'beforeRouteEnter', 'beforeRouteUpdate', 'beforeRouteLeave' ];
+const lifecycleNames = [ 'beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed' ].concat(routerLifecycleNames);
+let hasRoute = false;
+const importDeclarationMap: {
+    [source: string]: namedTypes.ImportDeclaration,
+} = {};
+
 function handleImport(imports: namedTypes.ImportDeclaration[]) {
     imports.forEach((importDeclaration) => {
         if (importDeclaration.source.type === 'Literal' && typeof importDeclaration.source.value == 'string') {
             importDeclaration.source.value = (importDeclaration.source.value as string).replace(/\.js$/, '');
+            importDeclarationMap[importDeclaration.source.value] = importDeclaration;
         }
     });
 }
@@ -31,6 +40,7 @@ function handleProp(props: namedTypes.Property) {
                 property.value as namedTypes.ObjectExpression,
             ]))
         ];
+        definition.comments = property.comments;
         return definition;
     });
 }
@@ -43,6 +53,7 @@ function handleData(data: namedTypes.Property) {
     return (properties as namedTypes.ObjectProperty[]).map((property) => {
         const definition = b.classProperty(property.key, property.value as namedTypes.PrimitiveLiteral, any());
         definition.access = 'public';
+        definition.comments = property.comments;
         return definition;
     });
 }
@@ -81,6 +92,7 @@ function handleComputed(computed: namedTypes.Property) {
                             const declaration = b.methodDefinition('get', property.key, newFunctionExpression);
                             declaration.kind = 'get';
                             declaration.accessibility = 'public';
+                            declaration.comments = property.comments;
                             l.push(declaration);
                         }
                     }
@@ -91,6 +103,7 @@ function handleComputed(computed: namedTypes.Property) {
             const functionExpression = property.value as namedTypes.FunctionExpression;
             const declaration = b.methodDefinition('get', property.key, functionExpression);
             declaration.accessibility = 'public';
+            declaration.comments = property.comments;
             result.push(declaration);
         }
     });
@@ -104,6 +117,8 @@ function handleMethod(methods: namedTypes.Property[]) {
             functionExpression.async = method.value.async;
             const declaration = b.methodDefinition('method', method.key as namedTypes.Identifier, functionExpression);
             declaration.accessibility = 'public';
+            // console.log(method.comments, functionExpression.comments);
+            declaration.comments = method.comments;
             return declaration;
         }
     })
@@ -131,8 +146,35 @@ function handleWatch(list: namedTypes.Property[]) {
                 b.literal(propertyName),
             ])),
         ];
+        declaration.comments = property.comments;
         return declaration;
     });
+}
+
+function addParamsTypeAnnotation(params: K.PatternKind[]) {
+    const names = (params.filter(param => param.type === 'Identifier') as namedTypes.Identifier[]).map(param => param.name);
+    const hasRoute = names[0] == 'to' && names[1] == 'from' && names[2] == 'next';
+    const ret = params.map((param) => {
+        if (param.type === 'Identifier') {
+            if (!param.typeAnnotation) {
+                if (hasRoute && param.name  === 'to' || param.name === 'from') {
+                    param.typeAnnotation = b.tsTypeAnnotation(b.tsTypeReference(b.identifier('Route')));
+                } else {
+                    param.typeAnnotation = any();
+                }
+            }
+        } else if (param.type === 'ObjectPattern') {
+            if (!param.typeAnnotation) {
+                param.typeAnnotation = any();
+            }
+        }
+
+        return param;
+    });
+    return {
+        params: ret,
+        hasRoute,
+    };
 }
 
 /**
@@ -173,6 +215,7 @@ export default function(input: string, output: string) {
         tabWidth: 4,
     });
 
+    let originalExportDefault: namedTypes.ExportDefaultDeclaration | null = null;
     const importDeclarations: namedTypes.ImportDeclaration[] = [];
     let extract = new Extract(originalAst);
     const name = extract.extractFromExportDefault('name');
@@ -195,19 +238,10 @@ export default function(input: string, output: string) {
             const functionDeclaration = p.value as namedTypes.FunctionDeclaration;
             const params = functionDeclaration.params;
             if (params) {
-                functionDeclaration.params = params.map((param) => {
-                    if (param.type === 'Identifier') {
-                        if (!param.typeAnnotation) {
-                            param.typeAnnotation = any();
-                        }
-                    } else if (param.type === 'ObjectPattern') {
-                        if (!param.typeAnnotation) {
-                            param.typeAnnotation = any();
-                        }
-                    }
-                    
-                    return param;
-                });
+                const id = functionDeclaration.id;
+                const result = addParamsTypeAnnotation(params)
+                functionDeclaration.params = result.params;
+                hasRoute = hasRoute || result.hasRoute;
             }
             this.traverse(p);
         },
@@ -215,19 +249,10 @@ export default function(input: string, output: string) {
             const functionDeclaration = p.value as namedTypes.FunctionExpression;
             const params = functionDeclaration.params;
             if (params) {
-                functionDeclaration.params = params.map((param) => {
-                    if (param.type === 'Identifier') {
-                        if (!param.typeAnnotation) {
-                            param.typeAnnotation = any();
-                        }
-                    } else if (param.type === 'ObjectPattern') {
-                        if (!param.typeAnnotation) {
-                            param.typeAnnotation = any();
-                        }
-                    }
-                    
-                    return param;
-                });
+                const id = functionDeclaration.id;
+                const result = addParamsTypeAnnotation(params);
+                functionDeclaration.params = result.params;
+                hasRoute = hasRoute || result.hasRoute;
             }
             this.traverse(p);
         },
@@ -235,19 +260,10 @@ export default function(input: string, output: string) {
             const arrowFunctionExpression = p.value as namedTypes.ArrowFunctionExpression;
             const params = arrowFunctionExpression.params;
             if (params) {
-                arrowFunctionExpression.params = params.map((param) => {
-                    if (param.type === 'Identifier') {
-                        if (!param.typeAnnotation) {
-                            param.typeAnnotation = any();
-                        }
-                    } else if (param.type === 'ObjectPattern') {
-                        if (!param.typeAnnotation) {
-                            param.typeAnnotation = any();
-                        }
-                    }
-
-                    return param;
-                });
+                const id = arrowFunctionExpression.id;
+                const result = addParamsTypeAnnotation(params);
+                arrowFunctionExpression.params = result.params;
+                hasRoute = hasRoute || result.hasRoute;
             }
             this.traverse(p);
         },
@@ -255,9 +271,10 @@ export default function(input: string, output: string) {
             const property = p.value as namedTypes.Property;
             if (property.key && property.key.type === 'Identifier') {
                 const name = property.key.name;
-                if ([ 'created', 'mounted', 'beforeDestroy', 'beforeRouteEnter', 'beforeRouteUpdate', 'beforeRouteLeave' ].indexOf(name) >= 0) {
+                if (lifecycleNames.indexOf(name) >= 0) {
                     const declaration = b.methodDefinition('method', property.key as namedTypes.Identifier, property.value as namedTypes.FunctionExpression);
                     declaration.accessibility = 'public';
+                    declaration.comments = property.comments;
                     lifecycleDefinitions.push(declaration);
                 }
             }
@@ -271,7 +288,7 @@ export default function(input: string, output: string) {
         if (item.type === 'ImportDeclaration') {
             // nothing
         } else if (item.type === 'ExportDefaultDeclaration') {
-            // nothing
+            originalExportDefault = item as namedTypes.ExportDefaultDeclaration;
         } else {
             other.push(item);
         }
@@ -349,6 +366,9 @@ export default function(input: string, output: string) {
         )
     ];
     const exportDefault = b.exportDefaultDeclaration(clazz);
+    if (originalExportDefault) {
+        exportDefault.comments = (originalExportDefault as namedTypes.ExportDefaultDeclaration).comments;
+    }
 
     // 处理vue-property-decorator
     const importFromVPD = importFromVuePropertyDecorator([
@@ -356,9 +376,35 @@ export default function(input: string, output: string) {
         watchDefinitions.length > 0 ? 'Watch' : null,
     ]);
 
+    // 处理import
+    if (hasRoute) {
+        const importDeclaration = importDeclarationMap['vue-router'];
+        if (importDeclaration) {
+            if (importDeclaration.specifiers) {
+                let needImport = true;
+                for (const specifier of importDeclaration.specifiers) {
+                    const imported = (specifier as namedTypes.ImportSpecifier).imported;
+                    if (imported) {
+                        if ((imported as namedTypes.Identifier).name === 'Route') {
+                            // 已经存在Route，不需要处理
+                            needImport = false;
+                        }
+                    }
+                }
+                if (needImport) {
+                    importDeclaration.specifiers.push(b.importSpecifier(b.identifier('Route')));
+                }
+            } else {
+                importDeclaration.specifiers = [ b.importSpecifier(b.identifier('Route')) ];
+            }
+        } else {
+            importDeclarations.push(b.importDeclaration([ b.importSpecifier(b.identifier('Route')) ], b.stringLiteral('vue-router')));
+        }
+    }
+
     generatedAst.program.body.push(...importDeclarations, importFromVPD, ...other);
     generatedAst.program.body.push(exportDefault);
-    const code = header + '\n' + recast.print(generatedAst).code + '\n' + footer;
+    const code = header + '\n' + recast.print(generatedAst, { tabWidth: 4 }).code + '\n' + footer;
     
     fs.writeFileSync(output, code);
 }
