@@ -19,21 +19,39 @@
 2. 将AST修改成class形式。（类型信息自然没法全部填上，可以先用any或者选择不填写）
 3. 将AST转换成新代码。
 
-recast库能够方便地解析js代码，同时也能够生成ts代码。关于recast库的使用还是参考原本的文档，这里就不再详细描述了。
+关于什么是抽象语法树，可以在网上查找相关资料详细了解（我觉得对于抽象语法树有一定的了解是很有必要的）。简单来说，js代码可以用一个树形结构表示，这个树形结构就是抽象语法树。例如：
+
+```javascript
+function foo() {
+    return a + b;
+}
+```
+
+对应的AST可能是下图这样的
+
+<img src="https://static.playground.forzoom.tech/article/2.png" />
+
+如果希望将代码中的b修改为c，那么只需要修改树中的节点就可以，例如这样：
+
+<img src="https://static.playground.forzoom.tech/article/1.png" />
+
+之后再生成代码就可以了。
 
 ### 代码和AST的转换
 
 [recast](https://www.npmjs.com/package/recast)是一个可以方便对代码和AST进行转换的库，可以帮我们打开冰箱门和关上冰箱门。
 
-#### 关于recast
+这里必须再提到两个概念，分别是[ast-types](https://www.npmjs.com/package/ast-types)和[estree](https://github.com/estree/estree)。
 
-recast中所使用的ast-types作为其类型内容，ast-types和estree所定义的类型好像稍有不同，ast-types所定义的内容没有estree那么全，例如在某些情况下，会存在decorators字段不存在的情况，自然可以通过d.ts文件对ast-types中的类型定义进行扩展。
+estree是将js代码解析成ast的一个社区标准，对这个标准有一定的了解，或者说你对于编译原理有一定的了解，有助于使用这些用于操作代码的库。
+
+recast使用ast-types中对于语法的定义来完成功能，
+
+ast-types和estree所定义的类型好像稍有不同，ast-types所定义的内容没有estree那么全，例如在某些情况下，会存在decorators字段不存在的情况，自然可以通过d.ts文件对ast-types中的类型定义进行扩展。
 
 如果对于编译原理了解的不是那么清楚的话，那么也可以通过recast.parse一些代码，来了解应该如何写，之后依葫芦画瓢编写代码就可以。
 
 ### 关于estree
-
-在之后的内容中会遇到estree这个专有名词，这是将js代码解析成ast的一个社区标准，对这个标准有一定的了解，或者说你对于编译原理有一定的了解，有助于使用这些用于操作代码的库。estree有一个在github上的[仓库](https://github.com/estree/estree)。
 
 ### 选择parser
 
