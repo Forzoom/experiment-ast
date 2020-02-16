@@ -298,7 +298,7 @@ export default function(input: string, output: string) {
     console.info('handle import done!');
 
     if (!name) {
-        console.warn(input + ' lost name');
+        console.warn('lost name');
         return;
     }
     /** 类名，大写开头 */

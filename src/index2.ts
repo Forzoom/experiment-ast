@@ -44,6 +44,7 @@ while (queue.length > 0) {
                     mode: 0o755,
                 });
                 handleVue(filePath, output);
+                // console.log(filePath, output);
                 handleCount++;
                 count++;
             }

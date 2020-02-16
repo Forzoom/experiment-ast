@@ -12,5 +12,5 @@
    7. [x] lifecycle
 6. [x] 缺少声明周期函数
 7. [x] 对于beforeRouteEnter/Update/Leave，使用特定的params
-8. [] 有些文件没有被处理
-9. 
+8. [x] 有些文件没有被处理
+9. [ ] 添加router相关的处理
