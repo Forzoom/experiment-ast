@@ -1,8 +1,8 @@
-import './toTS/polyfill';
+import './js/polyfill';
 import * as recast from 'recast';
 import tsParser from '@typescript-eslint/typescript-estree';
-import handleStore from './toTS/store';
-import handleVue from './toTS/vue';
+import handleStore from './js/store';
+import handleVue from './js/vue';
 import fs from 'fs';
 import path from 'path';
 
@@ -17,7 +17,7 @@ const componentDir = dir + '/components';
 const featureDir = dir + '/features';
 const pageDir = dir + '/pages';
 const storeDir = dir + '/store';
-const queue = [ pageDir ];
+const queue = [ storeDir ];
 const throttle = 800; // 最多处理文件数量
 let count = 0;
 let handleCount = 0;
@@ -37,14 +37,24 @@ while (queue.length > 0) {
             queue.unshift(...children.map(child => filePath + '/' + child));
         } else {
             // 如果是文件，判断是否以vue结尾
-            if (filePath.indexOf('.vue') >= 0) {
+            if (/.vue$/.test(filePath)) {
                 const output = dist + filePath.substr(dir.length);
                 fs.mkdirSync(path.dirname(output), {
                     recursive: true,
                     mode: 0o755,
                 });
                 handleVue(filePath, output);
-                // console.log(filePath, output);
+                handleCount++;
+                count++;
+            } else if (/.js$/.test(filePath) && /\/store/.test(filePath)) {
+                const output = dist + filePath.substr(dir.length).replace(/.js$/, '.ts');
+                const origin = dist + filePath.substr(dir.length);
+                fs.mkdirSync(path.dirname(output), {
+                    recursive: true,
+                    mode: 0o755,
+                });
+                handleStore(filePath, output);
+                fs.unlinkSync(origin);
                 handleCount++;
                 count++;
             }

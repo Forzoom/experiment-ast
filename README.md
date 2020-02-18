@@ -14,3 +14,4 @@
 7. [x] 对于beforeRouteEnter/Update/Leave，使用特定的params
 8. [x] 有些文件没有被处理
 9. [ ] 添加router相关的处理
+10. [ ] 删除params最后的逗号

@@ -181,7 +181,7 @@ function addParamsTypeAnnotation(params: K.PatternKind[]) {
  * 对于vue文件进行处理
  */
 export default function(input: string, output: string) {
-    console.log(input, output);
+    console.info(input, output);
     const extname = path.extname(input);
     if (extname !== '.vue') {
         console.warn(input + ' isnt a vue file');

@@ -9,7 +9,7 @@
 1. 使用Vue.extend方法实现。
 2. 使用class语法配合[vue-property-decorator](https://www.npmjs.com/package/vue-property-decorator)实现。
 
-具体应该选择哪种方案，见仁见智。我所采用的是方法2。为什么选择它，如果使用方法1的话重写起来岂不是很方便？选择方法2是因为在Vue中大量使用`this`关键字，使用class形式更加符合直觉。
+具体应该选择哪种方案，见仁见智。我所采用的是方法2。为什么选择它，如果使用方法1的话重写起来岂不是很方便？选择方法2是因为在Vue中大量使用`this`关键字，使用class形式更加符合直觉——所有的内容都是在class实例上。
 
 ### 实现思路
 
@@ -41,24 +41,22 @@ function foo() {
 
 [recast](https://www.npmjs.com/package/recast)是一个可以方便对代码和AST进行转换的库，可以帮我们打开冰箱门和关上冰箱门。
 
-这里必须再提到两个概念，分别是[ast-types](https://www.npmjs.com/package/ast-types)和[estree](https://github.com/estree/estree)。
+这里必须再提到两个概念，分别是**estree**和**ast-types**。
 
-estree是将js代码解析成ast的一个社区标准，对这个标准有一定的了解，或者说你对于编译原理有一定的了解，有助于使用这些用于操作代码的库。
+[estree](https://github.com/estree/estree)是将js代码解析成AST的一个社区标准，也就是，最终生成的AST节点中有哪些值，目前基本上都应该参照estree中的说明进行实现。对这个标准有一些的了解，或者说对于编译原理有一定的了解，可以提高之后修改代码的效率。
 
-recast使用ast-types中对于语法的定义来完成功能，
+[ast-types](https://www.npmjs.com/package/ast-types)是recast中所使用的库，对于语法的定义来完成功能。
 
-ast-types和estree所定义的类型好像稍有不同，ast-types所定义的内容没有estree那么全，例如在某些情况下，会存在decorators字段不存在的情况，自然可以通过d.ts文件对ast-types中的类型定义进行扩展。
+ast-types中所定义的类型兼容estree，但实际使用中，感觉会有一些缺失，例如在某些情况下，会存在decorators字段不存在的情况，自然可以通过d.ts文件对ast-types中的类型定义进行扩展。
 
 如果对于编译原理了解的不是那么清楚的话，那么也可以通过recast.parse一些代码，来了解应该如何写，之后依葫芦画瓢编写代码就可以。
-
-### 关于estree
 
 ### 选择parser
 
 recast默认使用[esprima](https://www.npmjs.com/package/esprima)来进行语法解析，esprima对新语法已经有了较多的支持（目前使用4.0.1版本），但是对于目前在项目中使用的语法来说，还是有一些语法是esprima无法解析的，这里还找到另外两个用于语法解析的库，分别是[@typescript-eslint/typescript-estree](https://www.npmjs.com/package/@typescript-eslint/typescript-estree)和[@babel/parser](https://www.npmjs.com/package/@babel/parser)，其中@typescript-eslint/typescript-estree对于目前vue-property-decorator中使用的修饰器语法并不支持，所以推荐使用@babel/parser来完成对于代码的解析。
 
 ```typescript
-const originalAst = recast.parse(jsScript, {
+const ast = recast.parse(jsScript, {
     parser: {
         parse(source: string, options: any) {
             return parser.parse(source, Object.assign(options, {
