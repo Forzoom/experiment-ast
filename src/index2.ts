@@ -3,6 +3,7 @@ import * as recast from 'recast';
 import tsParser from '@typescript-eslint/typescript-estree';
 import handleStore from './js/store';
 import handleVue from './js/vue';
+import handleRouter from './js/router';
 import fs from 'fs';
 import path from 'path';
 
@@ -10,6 +11,7 @@ import path from 'path';
 
 // handleStore('./assets/address1.js', './assets/address1.ts');
 // handleVue('./assets/mine.vue', './assets/mine1.vue');
+// handleRouter('./assets/router.js', './assets/router.ts');
 
 const dir = '/Volumes/Repo2/repo/vue/tourye_web_ts/src';
 const dist = '/Volumes/Repo2/repo/vue/tourye_web_ts_ast/src';
@@ -17,7 +19,8 @@ const componentDir = dir + '/components';
 const featureDir = dir + '/features';
 const pageDir = dir + '/pages';
 const storeDir = dir + '/store';
-const queue = [ storeDir ];
+const routerDir = dir + '/router';
+const queue = [ routerDir ];
 const throttle = 800; // 最多处理文件数量
 let count = 0;
 let handleCount = 0;
@@ -54,7 +57,24 @@ while (queue.length > 0) {
                     mode: 0o755,
                 });
                 handleStore(filePath, output);
-                fs.unlinkSync(origin);
+                // 如果原本js文件存在，那么就删除掉
+                if (fs.existsSync(origin)) {
+                    fs.unlinkSync(origin);
+                }
+                handleCount++;
+                count++;
+            } else if (/.js$/.test(filePath) && /\/router/.test(filePath)) {
+                const output = dist + filePath.substr(dir.length).replace(/.js$/, '.ts');
+                const origin = dist + filePath.substr(dir.length);
+                fs.mkdirSync(path.dirname(output), {
+                    recursive: true,
+                    mode: 0o755,
+                });
+                handleRouter(filePath, output);
+                // 如果原本js文件存在，那么就删除掉
+                if (fs.existsSync(origin)) {
+                    fs.unlinkSync(origin);
+                }
                 handleCount++;
                 count++;
             }
