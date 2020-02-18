@@ -45,17 +45,18 @@ function foo() {
 
 [estree](https://github.com/estree/estree)是将js代码解析成AST的一个社区标准，也就是，最终生成的AST节点中有哪些值，目前基本上都应该参照estree中的说明进行实现。对这个标准有一些的了解，或者说对于编译原理有一定的了解，可以提高之后修改代码的效率。
 
-[ast-types](https://www.npmjs.com/package/ast-types)是recast中所使用的库，对于语法的定义来完成功能。
-
-ast-types中所定义的类型兼容estree，但实际使用中，感觉会有一些缺失，例如在某些情况下，会存在decorators字段不存在的情况，自然可以通过d.ts文件对ast-types中的类型定义进行扩展。
+[ast-types](https://www.npmjs.com/package/ast-types)是recast中所使用的库，提供了语法树节点定义、遍历等功能。ast-types中所定义的类型兼容estree，但实际使用中，感觉有时会有一些缺失，例如在某些情况下，会存在decorators字段不存在的情况，可以通过d.ts文件对ast-types中的类型定义进行扩展。
 
 如果对于编译原理了解的不是那么清楚的话，那么也可以通过recast.parse一些代码，来了解应该如何写，之后依葫芦画瓢编写代码就可以。
 
-### 选择parser
+#### 选择parser
 
-recast默认使用[esprima](https://www.npmjs.com/package/esprima)来进行语法解析，esprima对新语法已经有了较多的支持（目前使用4.0.1版本），但是对于目前在项目中使用的语法来说，还是有一些语法是esprima无法解析的，这里还找到另外两个用于语法解析的库，分别是[@typescript-eslint/typescript-estree](https://www.npmjs.com/package/@typescript-eslint/typescript-estree)和[@babel/parser](https://www.npmjs.com/package/@babel/parser)，其中@typescript-eslint/typescript-estree对于目前vue-property-decorator中使用的修饰器语法并不支持，所以推荐使用@babel/parser来完成对于代码的解析。
+在recast.parse解析代码时，会默认使用[esprima](https://www.npmjs.com/package/esprima)来进行语法解析，esprima（目前为4.0.1版本）对js新语法已经有了较多的支持，但是对于目前的项目中说，还是有部分语法无法解析。为了解决这个问题，recast也可以自定义所使用的语法解析器。
+
+我还找到另外两个语法解析库，分别是[@typescript-eslint/typescript-estree](https://www.npmjs.com/package/@typescript-eslint/typescript-estree)和[@babel/parser](https://www.npmjs.com/package/@babel/parser)，其中@typescript-eslint/typescript-estree对于目前vue-property-decorator中使用的修饰器语法并不支持，所以最终选择@babel/parser。
 
 ```typescript
+// 使用自定义的语法解析库
 const ast = recast.parse(jsScript, {
     parser: {
         parse(source: string, options: any) {
@@ -72,6 +73,10 @@ const ast = recast.parse(jsScript, {
 });
 ```
 
+### 对AST进行修改
+
+// 是否有必要写这一部分呢?
+
 ### 递归遍历
 
 在Node中使用fs来完成对于文件的遍历
@@ -83,18 +88,17 @@ const dist = '/Volumes/Repo2/repo/vue/tourye_web_ts_ast/src';
 const pageDir = dir + '/pages';
 const queue = [ pageDir ];
 
-// 深度优先搜索
 while (queue.length > 0) {
     const filePath = queue.shift();
     if (filePath) {
         const stats = fs.statSync(filePath);
         const isDirectory = stats.isDirectory();
         if (isDirectory) {
-            // 如果是文件夹，加入queue
+            // 如果是文件夹，将所有的子路径加入queue
             const children = fs.readdirSync(filePath);
             queue.unshift(...children.map(child => filePath + '/' + child));
         } else {
-            // 如果是文件，判断是否存在.vue
+            // 如果是文件，判断是否是.vue文件
             if (filePath.indexOf('.vue') >= 0) {
                 const output = dist + filePath.substr(dir.length);
                 fs.mkdirSync(path.dirname(output), {
