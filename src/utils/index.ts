@@ -4,6 +4,7 @@ export * from './export';
 export * from './extract';
 export * from './import';
 export * from './string';
+export * from './vue';
 
 // 解析
 export function parseMemberExpression(exp: namedTypes.MemberExpression) {
@@ -31,19 +32,6 @@ export function formatMemberExpression(list: string[]) {
     return exp;
 }
 
-export function isDef(val: any): val is (undefined | null) {
-    return val != null;
+export function isUndef(val: any): val is (undefined | null) {
+    return val == null;
 }
-
-// type Id = number
-// const node = b.tsTypeAliasDeclaration(b.identifier('Id'), b.tsNumberKeyword())
-
-// const m: m = {}
-// const m = b.identifier('m');
-// m.typeAnnotation = b.tsTypeAnnotation(b.tsTypeReference(b.identifier('m')));
-// const node = b.variableDeclaration('var', [
-//     b.variableDeclarator(
-//         m,
-//         null,
-//     )
-// ])

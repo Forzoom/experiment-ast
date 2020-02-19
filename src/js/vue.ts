@@ -12,7 +12,8 @@ import {
     importFromVuePropertyDecorator,
     camelCaseWithDollar,
     any,
-} from './utils';
+    getScriptContent,
+} from '@/utils';
 
 const routerLifecycleNames = [ 'beforeRouteEnter', 'beforeRouteUpdate', 'beforeRouteLeave' ];
 const lifecycleNames = [ 'beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed' ].concat(routerLifecycleNames);
@@ -188,16 +189,12 @@ export default function(input: string, output: string) {
         return;
     }
     const originalCode = fs.readFileSync(input, 'utf-8');
-    const startPos = originalCode.indexOf('<script>');
-    if (startPos < 0) {
+    const scriptContent = getScriptContent(originalCode);
+    if (!scriptContent) {
         console.warn(input + ' script is lost');
         return;
     }
-    const endPos = originalCode.indexOf('</script>');
-    const header = originalCode.substr(0, startPos) + '<script lang="ts">';
-    const footer = originalCode.substr(endPos);
-    const jsScript = originalCode.substr(startPos + 8, endPos - startPos - 8);
-    const originalAst = recast.parse(jsScript, {
+    const originalAst = recast.parse(scriptContent.jsScript, {
         parser: {
             parse(source: string, options: any) {
                 return parser.parse(source, Object.assign(options, {
@@ -404,7 +401,7 @@ export default function(input: string, output: string) {
 
     generatedAst.program.body.push(...importDeclarations, importFromVPD, ...other);
     generatedAst.program.body.push(exportDefault);
-    const code = header + '\n' + recast.print(generatedAst, { tabWidth: 4 }).code + '\n' + footer;
+    const code = scriptContent.header + '\n' + recast.print(generatedAst, { tabWidth: 4 }).code + '\n' + scriptContent.footer;
     
     fs.writeFileSync(output, code);
 }

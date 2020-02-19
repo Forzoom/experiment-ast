@@ -8,7 +8,7 @@ import {
     exportDefaultM,
     camelCaseWithFirstLetter,
     tsPropertySignature,
-} from './utils/index';
+} from '@/utils/index';
 // 尝试自定义扩展ast-types的定义
 import { builders as b, namedTypes } from 'ast-types';
 
