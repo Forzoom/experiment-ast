@@ -7,11 +7,10 @@ import * as K from 'ast-types/gen/kinds';
 import * as parser from '@babel/parser';
 import {
     Extract,
-    importFromVuePropertyDecorator,
     getScriptContent,
 } from '@/utils';
 import {
-    DataNode, ComputedNode, PropNode, MethodNode, WatchNode, VueNode,
+    DataNode, ComputedNode, PropNode, MethodNode, WatchNode, VueNode, LifecycleNode,
 } from '@/gen/node';
 import plugin from '@/gen/plugins/addParamsTypeAnnotation';
 
@@ -156,7 +155,7 @@ export default function(input: string, output: string) {
     const computed = extract.extractFromExportDefault('computed');
     const watchList = extract.extractFromExportDefault('watch');
     const methods = extract.extractFromExportDefault('methods');
-    const lifecycleDefinitions: namedTypes.MethodDefinition[] = [];
+    const lifecycleNodes: LifecycleNode[] = [];
 
     recast.visit(originalAst, {
         // 处理import
@@ -169,10 +168,9 @@ export default function(input: string, output: string) {
             if (property.key && property.key.type === 'Identifier') {
                 const name = property.key.name;
                 if (lifecycleNames.indexOf(name) >= 0) {
-                    const declaration = b.methodDefinition('method', property.key as namedTypes.Identifier, property.value as namedTypes.FunctionExpression);
-                    declaration.accessibility = 'public';
-                    declaration.comments = property.comments;
-                    lifecycleDefinitions.push(declaration);
+                    const node = new LifecycleNode((property.key as namedTypes.Identifier).name, property.value as namedTypes.FunctionExpression);
+                    node.comments = property.comments;
+                    lifecycleNodes.push(node);
                 }
             }
             this.traverse(p);
@@ -202,98 +200,57 @@ export default function(input: string, output: string) {
     const className = (name.value as namedTypes.StringLiteral).value;
 
     // 如果存在props，处理props
-    let propDefinitions: namedTypes.ClassProperty[] = [];
     let propNodes: PropNode[] = [];
     if (props) {
         propNodes = handleProp(props);
-        propDefinitions = propNodes.map((node) => node.toTsClass());
     }
     console.info('handle props done!');
 
     // 处理data
-    let dataDefinitions: namedTypes.ClassProperty[] = [];
     let dataNodes: DataNode[] = [];
     if (dataFunc) {
         dataNodes = handleData(dataFunc);
-        dataDefinitions = dataNodes.map((node) => node.toTsClass());
     }
     console.info('handle data done!');
 
     // 处理computed
-    let computedDefinitions: namedTypes.MethodDefinition[] = [];
     let computedNodes: ComputedNode[] = [];
     if (computed) {
         computedNodes = handleComputed(computed);
-        computedDefinitions = computedNodes.map((node) => node.toTsClass());
     }
     console.info('handle computed done!');
 
     // 处理method
-    let methodDefinitions: namedTypes.MethodDefinition[] = [];
     let methodNodes: MethodNode[] = [];
     if (methods) {
         methodNodes = handleMethod((methods.value as namedTypes.ObjectExpression).properties as namedTypes.Property[]).filter(_ => _) as MethodNode[];
-        methodDefinitions = methodNodes.map((node) => node.toTsClass());
     }
     console.info('handle methods done!');
 
     // 处理watch
-    let watchDefinitions: namedTypes.TSDeclareMethod[] = []
     let watchNodes: WatchNode[] = [];
     if (watchList) {
         watchNodes = handleWatch((watchList.value as namedTypes.ObjectExpression).properties as namedTypes.Property[]);
-        watchDefinitions = watchNodes.map((node) => node.toTsClass());
     }
     console.info('handle watch done!');
 
-    // 定义class
-    const clazz = b.classDeclaration(
-        b.identifier(className),
-        b.classBody([
-            ...propDefinitions,
-            ...dataDefinitions,
-            ...computedDefinitions.flat(),
-            ...watchDefinitions,
-            ...methodDefinitions,
-            ...lifecycleDefinitions,
-        ]),
-        b.identifier('Vue')
-    );
-    clazz.decorators = [
-        b.decorator(
-            b.callExpression(
-                b.identifier('Component'),
-                [
-                    b.objectExpression([
-                        b.property('init', b.identifier('name'), b.literal(className)),
-                        componentList!,
-                    ].filter(_ => _)),
-                ],
-            )
-        )
-    ];
-    const exportDefault = b.exportDefaultDeclaration(clazz);
-    if (originalExportDefault) {
-        exportDefault.comments = (originalExportDefault as namedTypes.ExportDefaultDeclaration).comments;
-    }
-
-    // 处理vue-property-decorator
-    const importFromVPD = importFromVuePropertyDecorator([
-        props && (props.value as namedTypes.ObjectExpression).properties.length > 0 ? 'Prop' : null,
-        watchDefinitions.length > 0 ? 'Watch' : null,
-    ]);
-
-    const vueNode = new VueNode();
+    const vueNode = new VueNode(className);
     vueNode.originalAst = originalAst;
+    vueNode.components = componentList;
     vueNode.imports = importDeclarations;
-    vueNode.prop = propNodes;
+    vueNode.props = propNodes;
     vueNode.data = dataNodes;
     vueNode.computed = computedNodes;
     vueNode.watch = watchNodes;
     vueNode.methods = methodNodes;
+    vueNode.lifecycles = lifecycleNodes;
+    if (originalExportDefault) {
+        vueNode.comments = (originalExportDefault as namedTypes.ExportDefaultDeclaration).comments;
+    }
+    const exportDefault = vueNode.toTsClass();
     plugin(vueNode);
 
-    generatedAst.program.body.push(...importDeclarations, importFromVPD, ...other);
+    generatedAst.program.body.push(...vueNode.imports, ...other);
     generatedAst.program.body.push(exportDefault);
     const code = scriptContent.header + '\n' + recast.print(generatedAst, { tabWidth: 4 }).code + '\n' + scriptContent.footer;
     

@@ -17,3 +17,4 @@
 10. [ ] 删除params最后的逗号
 11. [ ] 处理vue-property-decorator下的vue文件
 12. [ ] 考虑是否能对less文件进行处理
+13. [ ] 处理component/filter逻辑

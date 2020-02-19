@@ -8,17 +8,72 @@ import {
     parseMemberExpression,
     formatMemberExpression,
     camelCaseWithDollar,
+    importFromVuePropertyDecorator,
 } from '@/utils';
 
 export class VueNode {
     originalAst: any;
+    name: string;
+    components?: namedTypes.Property | null;
     imports?: namedTypes.ImportDeclaration[] | null;
     props?: PropNode[] | null;
     data?: DataNode[] | null;
     computed?: ComputedNode[] | null;
     watch?: WatchNode[] | null;
     methods?: MethodNode[] | null;
-    [key: string]: any;
+    lifecycles?: LifecycleNode[] | null;
+    comments?: K.CommentKind[] | null;
+
+    constructor(name: string) {
+        this.name = name;
+    }
+
+    public toTsClass() {
+        // 定义class
+        const clazz = b.classDeclaration(
+            b.identifier(this.name),
+            b.classBody([
+                ...(this.props || []).map(node => node.toTsClass()),
+                ...(this.data || []).map(node => node.toTsClass()),
+                ...(this.computed || []).map(node => node.toTsClass()),
+                ...(this.watch || []).map(node => node.toTsClass()),
+                ...(this.methods || []).map(node => node.toTsClass()),
+                ...(this.lifecycles || []).map(node => node.toTsClass()),
+            ]),
+            b.identifier('Vue')
+        );
+        clazz.decorators = [
+            b.decorator(
+                b.callExpression(
+                    b.identifier('Component'),
+                    [
+                        b.objectExpression([
+                            b.property('init', b.identifier('name'), b.literal(this.name)),
+                            this.components!,
+                        ].filter(_ => _)),
+                    ],
+                )
+            )
+        ];
+        const exportDefault = b.exportDefaultDeclaration(clazz);
+        exportDefault.comments = this.comments;
+
+        // 处理vue-property-decorator
+        const importFromVPD = importFromVuePropertyDecorator([
+            this.props && this.props.length > 0 ? 'Prop' : null,
+            this.watch && this.watch.length > 0 ? 'Watch' : null,
+        ]);
+
+        if (this.imports) {
+            this.imports.push(importFromVPD);
+        } else {
+            this.imports = [
+                importFromVPD,
+            ];
+        }
+
+        return exportDefault;
+    }
 }
 
 export class DataNode {
@@ -154,6 +209,25 @@ export class MethodNode {
         declaration.accessibility = 'public';
         // console.log(method.comments, functionExpression.comments);
         declaration.comments = this.comments;
+        return declaration;
+    }
+}
+
+export class LifecycleNode {
+    key: string;
+    value: namedTypes.FunctionExpression;
+    comments?: K.CommentKind[] | null;
+
+    constructor(key: string, value: namedTypes.FunctionExpression) {
+        this.key = key;
+        this.value = value;
+    }
+
+    public toTsClass() {
+        const declaration = b.methodDefinition('method', b.identifier(this.key), this.value);
+        declaration.accessibility = 'public';
+        declaration.comments = this.comments;
+
         return declaration;
     }
 }

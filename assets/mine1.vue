@@ -155,8 +155,8 @@ import {
     registerShare,
 } from '@/lib/utils';
 
-import { Route } from "vue-router";
 import { Component, Vue, Prop, Watch } from "vue-property-decorator";
+import { Route } from "vue-router";
 
 // test
 @Component({
