@@ -7,17 +7,16 @@ import * as K from 'ast-types/gen/kinds';
 import * as parser from '@babel/parser';
 import {
     Extract,
-    parseMemberExpression,
-    formatMemberExpression,
     importFromVuePropertyDecorator,
-    camelCaseWithDollar,
-    any,
     getScriptContent,
 } from '@/utils';
+import {
+    DataNode, ComputedNode, PropNode, MethodNode, WatchNode, VueNode,
+} from '@/gen/node';
+import plugin from '@/gen/plugins/addParamsTypeAnnotation';
 
 const routerLifecycleNames = [ 'beforeRouteEnter', 'beforeRouteUpdate', 'beforeRouteLeave' ];
 const lifecycleNames = [ 'beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed' ].concat(routerLifecycleNames);
-let hasRoute = false;
 const importDeclarationMap: {
     [source: string]: namedTypes.ImportDeclaration,
 } = {};
@@ -34,15 +33,9 @@ function handleImport(imports: namedTypes.ImportDeclaration[]) {
 function handleProp(props: namedTypes.Property) {
     const objectExpression = props.value as namedTypes.ObjectExpression;
     return (objectExpression.properties as namedTypes.ObjectProperty[]).map((property) => {
-        const definition = b.classProperty(property.key, null, any());
-        definition.access = 'public';
-        definition.decorators = [
-            b.decorator(b.callExpression(b.identifier('Prop'), [
-                property.value as namedTypes.ObjectExpression,
-            ]))
-        ];
-        definition.comments = property.comments;
-        return definition;
+        const node = new PropNode((property.key as namedTypes.Identifier).name, property.value);
+        node.comments = property.comments;
+        return node;
     });
 }
 
@@ -50,62 +43,43 @@ function handleData(data: namedTypes.Property) {
     const functionExpression = data.value as namedTypes.FunctionExpression;
     const returnStatement = functionExpression.body.body[0] as namedTypes.ReturnStatement;
     const objectExpression = returnStatement.argument as namedTypes.ObjectExpression;
-    const properties = objectExpression.properties;
-    return (properties as namedTypes.ObjectProperty[]).map((property) => {
-        const definition = b.classProperty(property.key, property.value as namedTypes.PrimitiveLiteral, any());
-        definition.access = 'public';
-        definition.comments = property.comments;
-        return definition;
+    const properties = objectExpression.properties as namedTypes.ObjectProperty[];
+
+    return properties.map((property) => {
+        const node = new DataNode((property.key as namedTypes.Identifier).name, property.value)
+        node.comments = property.comments;
+        return node;
     });
 }
 
 function handleComputed(computed: namedTypes.Property) {
-    const result: namedTypes.MethodDefinition[] = [];
+    const result: ComputedNode[] = [];
     const objectExpression = computed.value as namedTypes.ObjectExpression;
     (objectExpression.properties as Array<namedTypes.Property | namedTypes.SpreadElement>).forEach((property) => {
         if (property.type === 'SpreadElement') {
-            const l: namedTypes.MethodDefinition[] = [];
+            const l: ComputedNode[] = [];
             if (property.argument.type === 'CallExpression') {
-                let namespace: string[] = [];
+                let namespace: string = '';
                 for (const argument of property.argument.arguments) {
                     if (argument.type === 'Literal') {
-                        namespace = (argument.value as string).split('/');
+                        namespace = (argument.value as string);
                     } else if (argument.type === 'ObjectExpression') {
                         // 这是所有的内容
                         for (const property of argument.properties as namedTypes.Property[]) {
-                            let list: string[] = [];
-                            let async: boolean | undefined = false;
-                            if (property.value.type === 'FunctionExpression') {
-                                const functionExpression = property.value;
-                                list = parseMemberExpression((functionExpression.body.body[0] as namedTypes.ReturnStatement).argument as namedTypes.MemberExpression);
-                                async = functionExpression.async;
-                            } else if (property.value.type === 'ArrowFunctionExpression') {
-                                const arrowFunctionExpression = property.value;
-                                if (arrowFunctionExpression.body.type === 'MemberExpression') {
-                                    list = parseMemberExpression(arrowFunctionExpression.body);
-                                    async = arrowFunctionExpression.async;
-                                }
-                            }
-                            const memberExpression = formatMemberExpression([ 'store', 'state' ].concat(namespace).concat(list.slice(1)));
-                            const returnStatement = b.returnStatement(memberExpression);
-                            const newFunctionExpression = b.functionExpression(property.key as namedTypes.Identifier, [], b.blockStatement([returnStatement]));
-                            newFunctionExpression.async = async;
-                            const declaration = b.methodDefinition('get', property.key, newFunctionExpression);
-                            declaration.kind = 'get';
-                            declaration.accessibility = 'public';
-                            declaration.comments = property.comments;
-                            l.push(declaration);
+                            const node = new ComputedNode((property.key as namedTypes.Identifier).name, property.value as (namedTypes.FunctionExpression | namedTypes.ArrowFunctionExpression));
+                            node.store = true;
+                            node.storeNamespace = namespace;
+                            node.comments = property.comments;
+                            l.push(node);
                         }
                     }
                 }
             }
             result.push(...l);
         } else if (property.type === 'Property') {
-            const functionExpression = property.value as namedTypes.FunctionExpression;
-            const declaration = b.methodDefinition('get', property.key, functionExpression);
-            declaration.accessibility = 'public';
-            declaration.comments = property.comments;
-            result.push(declaration);
+            const node = new ComputedNode((property.key as namedTypes.Identifier).name, property.value as namedTypes.FunctionExpression);
+            node.comments = property.comments;
+            result.push(node);
         }
     });
     return result;
@@ -114,13 +88,9 @@ function handleComputed(computed: namedTypes.Property) {
 function handleMethod(methods: namedTypes.Property[]) {
     return methods.map(method => {
         if (method.value.type === 'FunctionExpression') {
-            const functionExpression = b.functionExpression(method.key as namedTypes.Identifier, method.value.params, method.value.body);
-            functionExpression.async = method.value.async;
-            const declaration = b.methodDefinition('method', method.key as namedTypes.Identifier, functionExpression);
-            declaration.accessibility = 'public';
-            // console.log(method.comments, functionExpression.comments);
-            declaration.comments = method.comments;
-            return declaration;
+            const node = new MethodNode((method.key as namedTypes.Identifier).name, method.value);
+            node.comments = method.comments;
+            return node;
         }
     })
 }
@@ -135,47 +105,11 @@ function handleWatch(list: namedTypes.Property[]) {
             propertyName = propertyKey.value as string;
         }
         const method = property.value as namedTypes.FunctionExpression;
-        // todo: 需要修改函数的名字
-        const declaration = b.tsDeclareMethod(b.identifier('on' + camelCaseWithDollar(propertyName) + 'Change'), method.params);
-        declaration.kind = 'method'; // 是一个正常函数
-        declaration.async = method.async; // 是否async
-        // @ts-ignore
-        declaration.value = method; // 函数体内容
-        declaration.accessibility = 'public';
-        declaration.decorators = [
-            b.decorator(b.callExpression(b.identifier('Watch'), [
-                b.literal(propertyName),
-            ])),
-        ];
-        declaration.comments = property.comments;
-        return declaration;
-    });
-}
 
-function addParamsTypeAnnotation(params: K.PatternKind[]) {
-    const names = (params.filter(param => param.type === 'Identifier') as namedTypes.Identifier[]).map(param => param.name);
-    const hasRoute = names[0] == 'to' && names[1] == 'from' && names[2] == 'next';
-    const ret = params.map((param) => {
-        if (param.type === 'Identifier') {
-            if (!param.typeAnnotation) {
-                if (hasRoute && param.name  === 'to' || param.name === 'from') {
-                    param.typeAnnotation = b.tsTypeAnnotation(b.tsTypeReference(b.identifier('Route')));
-                } else {
-                    param.typeAnnotation = any();
-                }
-            }
-        } else if (param.type === 'ObjectPattern') {
-            if (!param.typeAnnotation) {
-                param.typeAnnotation = any();
-            }
-        }
-
-        return param;
+        const node = new WatchNode(propertyName, method);
+        node.comments = property.comments;
+        return node;
     });
-    return {
-        params: ret,
-        hasRoute,
-    };
 }
 
 /**
@@ -230,40 +164,6 @@ export default function(input: string, output: string) {
             importDeclarations.push(d.value);
             this.traverse(d);
         },
-        // 处理所有的函数参数
-        visitFunctionDeclaration(p) {
-            const functionDeclaration = p.value as namedTypes.FunctionDeclaration;
-            const params = functionDeclaration.params;
-            if (params) {
-                const id = functionDeclaration.id;
-                const result = addParamsTypeAnnotation(params)
-                functionDeclaration.params = result.params;
-                hasRoute = hasRoute || result.hasRoute;
-            }
-            this.traverse(p);
-        },
-        visitFunctionExpression(p) {
-            const functionDeclaration = p.value as namedTypes.FunctionExpression;
-            const params = functionDeclaration.params;
-            if (params) {
-                const id = functionDeclaration.id;
-                const result = addParamsTypeAnnotation(params);
-                functionDeclaration.params = result.params;
-                hasRoute = hasRoute || result.hasRoute;
-            }
-            this.traverse(p);
-        },
-        visitArrowFunctionExpression(p) {
-            const arrowFunctionExpression = p.value as namedTypes.ArrowFunctionExpression;
-            const params = arrowFunctionExpression.params;
-            if (params) {
-                const id = arrowFunctionExpression.id;
-                const result = addParamsTypeAnnotation(params);
-                arrowFunctionExpression.params = result.params;
-                hasRoute = hasRoute || result.hasRoute;
-            }
-            this.traverse(p);
-        },
         visitProperty(p) {
             const property = p.value as namedTypes.Property;
             if (property.key && property.key.type === 'Identifier') {
@@ -303,36 +203,46 @@ export default function(input: string, output: string) {
 
     // 如果存在props，处理props
     let propDefinitions: namedTypes.ClassProperty[] = [];
+    let propNodes: PropNode[] = [];
     if (props) {
-        propDefinitions = handleProp(props);
+        propNodes = handleProp(props);
+        propDefinitions = propNodes.map((node) => node.toTsClass());
     }
     console.info('handle props done!');
 
     // 处理data
     let dataDefinitions: namedTypes.ClassProperty[] = [];
+    let dataNodes: DataNode[] = [];
     if (dataFunc) {
-        dataDefinitions = handleData(dataFunc);
+        dataNodes = handleData(dataFunc);
+        dataDefinitions = dataNodes.map((node) => node.toTsClass());
     }
     console.info('handle data done!');
 
     // 处理computed
     let computedDefinitions: namedTypes.MethodDefinition[] = [];
+    let computedNodes: ComputedNode[] = [];
     if (computed) {
-        computedDefinitions = handleComputed(computed);
+        computedNodes = handleComputed(computed);
+        computedDefinitions = computedNodes.map((node) => node.toTsClass());
     }
     console.info('handle computed done!');
 
     // 处理method
     let methodDefinitions: namedTypes.MethodDefinition[] = [];
+    let methodNodes: MethodNode[] = [];
     if (methods) {
-        methodDefinitions = handleMethod((methods.value as namedTypes.ObjectExpression).properties as namedTypes.Property[]).filter(_ => _) as namedTypes.MethodDefinition[];
+        methodNodes = handleMethod((methods.value as namedTypes.ObjectExpression).properties as namedTypes.Property[]).filter(_ => _) as MethodNode[];
+        methodDefinitions = methodNodes.map((node) => node.toTsClass());
     }
     console.info('handle methods done!');
 
     // 处理watch
     let watchDefinitions: namedTypes.TSDeclareMethod[] = []
+    let watchNodes: WatchNode[] = [];
     if (watchList) {
-        watchDefinitions = handleWatch((watchList.value as namedTypes.ObjectExpression).properties as namedTypes.Property[]);
+        watchNodes = handleWatch((watchList.value as namedTypes.ObjectExpression).properties as namedTypes.Property[]);
+        watchDefinitions = watchNodes.map((node) => node.toTsClass());
     }
     console.info('handle watch done!');
 
@@ -373,31 +283,15 @@ export default function(input: string, output: string) {
         watchDefinitions.length > 0 ? 'Watch' : null,
     ]);
 
-    // 处理import
-    if (hasRoute) {
-        const importDeclaration = importDeclarationMap['vue-router'];
-        if (importDeclaration) {
-            if (importDeclaration.specifiers) {
-                let needImport = true;
-                for (const specifier of importDeclaration.specifiers) {
-                    const imported = (specifier as namedTypes.ImportSpecifier).imported;
-                    if (imported) {
-                        if ((imported as namedTypes.Identifier).name === 'Route') {
-                            // 已经存在Route，不需要处理
-                            needImport = false;
-                        }
-                    }
-                }
-                if (needImport) {
-                    importDeclaration.specifiers.push(b.importSpecifier(b.identifier('Route')));
-                }
-            } else {
-                importDeclaration.specifiers = [ b.importSpecifier(b.identifier('Route')) ];
-            }
-        } else {
-            importDeclarations.push(b.importDeclaration([ b.importSpecifier(b.identifier('Route')) ], b.stringLiteral('vue-router')));
-        }
-    }
+    const vueNode = new VueNode();
+    vueNode.originalAst = originalAst;
+    vueNode.imports = importDeclarations;
+    vueNode.prop = propNodes;
+    vueNode.data = dataNodes;
+    vueNode.computed = computedNodes;
+    vueNode.watch = watchNodes;
+    vueNode.methods = methodNodes;
+    plugin(vueNode);
 
     generatedAst.program.body.push(...importDeclarations, importFromVPD, ...other);
     generatedAst.program.body.push(exportDefault);

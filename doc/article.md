@@ -71,7 +71,7 @@ const ast = recast.parse(jsScript, {
 });
 ```
 
-### 递归遍历
+### 遍历文件
 
 在Node中使用fs来完成对于文件的遍历
 
@@ -109,3 +109,5 @@ while (queue.length > 0) {
 ### 更进一步
 
 既然可以完成迁移到ts语法的过程，在Vue@3正式发布之后，可能会考虑是否能将旧代码，转换成composition-api的格式。
+
+转载请注明

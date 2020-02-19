@@ -1,0 +1,159 @@
+import {
+    namedTypes,
+    builders as b,
+} from 'ast-types';
+import * as K from 'ast-types/gen/kinds';
+import {
+    any,
+    parseMemberExpression,
+    formatMemberExpression,
+    camelCaseWithDollar,
+} from '@/utils';
+
+export class VueNode {
+    originalAst: any;
+    imports?: namedTypes.ImportDeclaration[] | null;
+    props?: PropNode[] | null;
+    data?: DataNode[] | null;
+    computed?: ComputedNode[] | null;
+    watch?: WatchNode[] | null;
+    methods?: MethodNode[] | null;
+    [key: string]: any;
+}
+
+export class DataNode {
+    key: string;
+    /** 可能是Literal */
+    init: any;
+    comments?: K.CommentKind[] | null;
+
+    constructor(key: string, init: any) {
+        this.key = key;
+        this.init = init;
+    }
+
+    public toTsClass() {
+        const definition = b.classProperty(b.identifier(this.key), this.init, any());
+        definition.access = 'public';
+        definition.comments = this.comments;
+        return definition;
+    }
+}
+
+export class ComputedNode {
+    key: string;
+    value: namedTypes.FunctionExpression | namedTypes.ArrowFunctionExpression;
+    comments?: K.CommentKind[] | null;
+
+    /** 是否来自store */
+    store: boolean = false;
+    storeNamespace?: string | null;
+
+    constructor(key: string, value: namedTypes.FunctionExpression | namedTypes.ArrowFunctionExpression) {
+        this.key = key;
+        this.value = value;
+    }
+
+    public toTsClass() {
+        if (this.store) {
+            let list: string[] = [];
+            let async: boolean | undefined = false;
+            const namespace = this.storeNamespace ? this.storeNamespace.split('/') : [];
+            if (this.value.type === 'FunctionExpression') {
+                const functionExpression = this.value;
+                list = parseMemberExpression((functionExpression.body.body[0] as namedTypes.ReturnStatement).argument as namedTypes.MemberExpression);
+                async = functionExpression.async;
+            } else if (this.value.type === 'ArrowFunctionExpression') {
+                const arrowFunctionExpression = this.value;
+                if (arrowFunctionExpression.body.type === 'MemberExpression') {
+                    list = parseMemberExpression(arrowFunctionExpression.body);
+                    async = arrowFunctionExpression.async;
+                }
+            }
+
+            const memberExpression = formatMemberExpression([ 'store', 'state' ].concat(namespace).concat(list.slice(1)));
+            const returnStatement = b.returnStatement(memberExpression);
+            const newFunctionExpression = b.functionExpression(b.identifier(this.key), [], b.blockStatement([returnStatement]));
+            newFunctionExpression.async = async;
+            const declaration = b.methodDefinition('get', b.identifier(this.key), newFunctionExpression);
+            declaration.accessibility = 'public';
+            declaration.comments = this.comments;
+            return declaration;
+        } else {
+            const declaration = b.methodDefinition('get', b.identifier(this.key), this.value);
+            declaration.accessibility = 'public';
+            declaration.comments = this.comments;
+            return declaration;
+        }
+    }
+}
+
+export class PropNode {
+    key: string;
+    value: any;
+    comments?: K.CommentKind[] | null;
+
+    constructor(key: string, value: any) {
+        this.key = key;
+        this.value = value;
+    }
+
+    public toTsClass() {
+        const definition = b.classProperty(b.identifier(this.key), null, any());
+        definition.access = 'public';
+        definition.decorators = [
+            b.decorator(b.callExpression(b.identifier('Prop'), [
+                this.value as namedTypes.ObjectExpression,
+            ]))
+        ];
+        definition.comments = this.comments;
+        return definition;
+    }
+}
+
+export class WatchNode {
+    key: string;
+    value: namedTypes.FunctionExpression;
+    comments?: K.CommentKind[] | null;
+    constructor(key: string, value: namedTypes.FunctionExpression) {
+        this.key = key;
+        this.value = value;
+    }
+
+    public toTsClass() {
+        // todo: 需要修改函数的名字
+        const declaration = b.tsDeclareMethod(b.identifier('on' + camelCaseWithDollar(this.key) + 'Change'), this.value.params);
+        declaration.kind = 'method'; // 是一个正常函数
+        declaration.async = this.value.async; // 是否async
+        // @ts-ignore
+        declaration.value = this.value; // 函数体内容
+        declaration.accessibility = 'public';
+        declaration.decorators = [
+            b.decorator(b.callExpression(b.identifier('Watch'), [
+                b.literal(this.key),
+            ])),
+        ];
+        declaration.comments = this.comments;
+        return declaration;
+    }
+}
+
+export class MethodNode {
+    key: string;
+    value: namedTypes.FunctionExpression;
+    comments?: K.CommentKind[] | null;
+    constructor(key: string, value: namedTypes.FunctionExpression) {
+        this.key = key;
+        this.value = value;
+    }
+
+    public toTsClass() {
+        const functionExpression = b.functionExpression(b.identifier(this.key), this.value.params, this.value.body);
+        functionExpression.async = this.value.async;
+        const declaration = b.methodDefinition('method', b.identifier(this.key), functionExpression);
+        declaration.accessibility = 'public';
+        // console.log(method.comments, functionExpression.comments);
+        declaration.comments = this.comments;
+        return declaration;
+    }
+}

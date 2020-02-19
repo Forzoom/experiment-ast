@@ -16,3 +16,4 @@
 9. [x] 添加router相关的处理
 10. [ ] 删除params最后的逗号
 11. [ ] 处理vue-property-decorator下的vue文件
+12. [ ] 考虑是否能对less文件进行处理
