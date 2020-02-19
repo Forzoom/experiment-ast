@@ -110,4 +110,6 @@ while (queue.length > 0) {
 
 既然可以完成迁移到ts语法的过程，在Vue@3正式发布之后，可能会考虑是否能将旧代码，转换成composition-api的格式。
 
-转载请注明
+<img src="https://static.playground.forzoom.tech/article/footer.jpg" />
+
+主子（看我的眼神，不点个赞再走吗~
