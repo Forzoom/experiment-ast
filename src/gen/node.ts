@@ -15,6 +15,9 @@ export class VueNode {
     originalAst: any;
     name: string;
     components?: namedTypes.Property | null;
+    filters?: namedTypes.Property | null;
+    directives?: namedTypes.Property | null;
+    mixins?: namedTypes.Property | null;
     imports?: namedTypes.ImportDeclaration[] | null;
     props?: PropNode[] | null;
     data?: DataNode[] | null;
@@ -42,6 +45,15 @@ export class VueNode {
         properties.push(b.property('init', b.identifier('name'), b.stringLiteral(this.name)));
         if (this.components) {
             properties.push(this.components);
+        }
+        if (this.filters) {
+            properties.push(this.filters);
+        }
+        if (this.directives) {
+            properties.push(this.directives);
+        }
+        if (this.mixins) {
+            properties.push(this.mixins);
         }
         properties.push(b.property('init', b.identifier('props'), b.objectExpression((this.props || []).map(node => node.toJs()))));
         properties.push(b.property('init', b.identifier('data'), dataFn));
@@ -80,6 +92,9 @@ export class VueNode {
                         b.objectExpression([
                             b.property('init', b.identifier('name'), b.literal(this.name)),
                             this.components!,
+                            this.filters!,
+                            this.directives!,
+                            this.mixins!,
                         ].filter(_ => _)),
                     ],
                 )

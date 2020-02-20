@@ -156,6 +156,9 @@ export default function(input: string, output: string) {
     const computed = extract.extractFromExportDefault('computed');
     const watchList = extract.extractFromExportDefault('watch');
     const methods = extract.extractFromExportDefault('methods');
+    const filters = extract.extractFromExportDefault('filters');
+    const directives = extract.extractFromExportDefault('directives');
+    const mixins = extract.extractFromExportDefault('mixins');
     const lifecycleNodes: LifecycleNode[] = [];
 
     recast.visit(originalAst, {
@@ -238,6 +241,9 @@ export default function(input: string, output: string) {
     const vueNode = new VueNode(className);
     vueNode.originalAst = originalAst;
     vueNode.components = componentList;
+    vueNode.filters = filters;
+    vueNode.directives = directives;
+    vueNode.mixins = mixins;
     vueNode.imports = importDeclarations;
     vueNode.props = propNodes;
     vueNode.data = dataNodes;

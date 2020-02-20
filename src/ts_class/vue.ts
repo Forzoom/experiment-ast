@@ -136,13 +136,22 @@ export default function(input: string, output: string) {
     // 寻找所有的变量定义
     const componentArgument = ((classDeclaration.decorators[0].expression as namedTypes.CallExpression).arguments[0] as namedTypes.ObjectExpression);
     let className: string | null = null;
-    let componentsList: namedTypes.Property | null = null;
+    let components: namedTypes.Property | null = null;
+    let filters: namedTypes.Property | null = null;
+    let directives: namedTypes.Property | null = null;
+    let mixins: namedTypes.Property | null = null;
     for (const property of componentArgument.properties as namedTypes.Property[]) {
         const name = (property.key as namedTypes.Identifier).name;
         if (name === 'name') {
             className = (property.value as namedTypes.StringLiteral).value;
         } else if (name === 'components') {
-            componentsList = property;
+            components = property;
+        } else if (name === 'filters') {
+            filters = property;
+        } else if (name === 'directives') {
+            directives = property;
+        } else if (name === 'mixins') {
+            mixins = property;
         }
     }
     const propNodes: PropNode[] = [];
@@ -200,7 +209,10 @@ export default function(input: string, output: string) {
 
     const vueNode = new VueNode(className!);
     vueNode.imports = importDeclarations;
-    vueNode.components = componentsList;
+    vueNode.components = components;
+    vueNode.filters = filters;
+    vueNode.directives = directives;
+    vueNode.mixins = mixins;
     vueNode.props = propNodes;
     vueNode.data = dataNodes;
     vueNode.computed = computedNodes;

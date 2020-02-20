@@ -18,3 +18,5 @@
 11. [ ] 处理vue-property-decorator下的vue文件
 12. [ ] 考虑是否能对less文件进行处理
 13. [ ] 处理component/filter逻辑
+14. [x] 处理render函数
+15. [ ] 处理export default的comments
