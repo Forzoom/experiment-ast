@@ -53,14 +53,27 @@ export default function(input: string, output: string) {
         tabWidth: 4,
     });
 
+    recast.visit(originalAst, {
+        visitFunctionExpression(p) {
+            (p.value as namedTypes.FunctionExpression).params.forEach(param => {
+                if (param.type === 'Identifier') {
+                    param.typeAnnotation = null;
+                } else if (param.type === 'ObjectPattern') {
+                    param.typeAnnotation = null;
+                }
+            });
+            this.traverse(p);
+        },
+    });
+
     // 寻找class的导出
     const body = originalAst.program.body as namedTypes.Node[];
-    let classDeclaration: namedTypes.ClassDeclaration | null = null;
+    let exportDefaultDeclaration: namedTypes.ExportDefaultDeclaration | null = null;
     let importDeclarations: namedTypes.ImportDeclaration[] = [];
     let other: namedTypes.Node[] = [];
     for (const node of body) {
-        if (node.type === 'ClassDeclaration') {
-            classDeclaration = node as namedTypes.ClassDeclaration;
+        if (node.type === 'ExportDefaultDeclaration') {
+            exportDefaultDeclaration = node as namedTypes.ExportDefaultDeclaration;
         } else if (node.type === 'ImportDeclaration') {
             importDeclarations.push(node as namedTypes.ImportDeclaration);
         } else {
@@ -68,8 +81,13 @@ export default function(input: string, output: string) {
         }
     }
 
-    if (!classDeclaration || !classDeclaration.decorators) {
-        console.warn('cannot find class declaration');
+    if (!exportDefaultDeclaration) {
+        console.warn('cannot find export default');
+        return;
+    }
+    const classDeclaration: namedTypes.ClassDeclaration | null = exportDefaultDeclaration.declaration as namedTypes.ClassDeclaration;
+    if (!classDeclaration.decorators) {
+        console.warn('cannot find class decorators');
         return;
     }
 
@@ -128,9 +146,15 @@ export default function(input: string, output: string) {
     }
 
     const vueNode = new VueNode(className!);
+    vueNode.components = componentsList;
     vueNode.props = propNodes;
     vueNode.data = dataNodes;
     vueNode.computed = computedNodes;
     vueNode.watch = watchNodes;
     vueNode.methods = methodNodes;
+
+    generatedAst.program.body.push(vueNode.toJs());
+    const code = scriptContent.header + '\n<script>\n' + recast.print(generatedAst, { tabWidth: 4 }).code + '\n</script>\n' + scriptContent.footer;
+    
+    fs.writeFileSync(output, code);
 }

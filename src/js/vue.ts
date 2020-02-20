@@ -252,7 +252,7 @@ export default function(input: string, output: string) {
 
     generatedAst.program.body.push(...vueNode.imports, ...other);
     generatedAst.program.body.push(exportDefault);
-    const code = scriptContent.header + '\n' + recast.print(generatedAst, { tabWidth: 4 }).code + '\n' + scriptContent.footer;
+    const code = scriptContent.header + '\n<script lang="ts">\n' + recast.print(generatedAst, { tabWidth: 4 }).code + '\n</script>\n' + scriptContent.footer;
     
     fs.writeFileSync(output, code);
 }

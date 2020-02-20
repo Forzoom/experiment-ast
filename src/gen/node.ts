@@ -28,6 +28,30 @@ export class VueNode {
         this.name = name;
     }
 
+    public toJs() {
+        const dataFn = b.functionExpression(
+            b.identifier('data'),
+            [],
+            b.blockStatement([
+                b.returnStatement(
+                    b.objectExpression((this.data || []).map(node => node.toJs()))
+                ),
+            ])
+        );
+        const properties: namedTypes.Property[] = [];
+        properties.push(b.property('init', b.identifier('name'), b.stringLiteral(this.name)));
+        if (this.components) {
+            properties.push(this.components);
+        }
+        properties.push(b.property('init', b.identifier('props'), b.objectExpression((this.props || []).map(node => node.toJs()))));
+        properties.push(b.property('init', b.identifier('data'), dataFn));
+        properties.push(b.property('init', b.identifier('computed'), b.objectExpression((this.computed || []).map(node => node.toJs()))));
+        properties.push(b.property('init', b.identifier('methods'), b.objectExpression((this.methods || []).map(node => node.toJs()))));
+        const obj = b.objectExpression(properties);
+        const exportDefault = b.exportDefaultDeclaration(obj);
+        return exportDefault;
+    }
+
     public toTsClass() {
         // 定义class
         const clazz = b.classDeclaration(
@@ -87,6 +111,12 @@ export class DataNode {
         this.init = init;
     }
 
+    public toJs() {
+        const property = b.property('init', b.identifier(this.key), this.init);
+        property.comments = this.comments;
+        return property;
+    }
+
     public toTsClass() {
         const definition = b.classProperty(b.identifier(this.key), this.init, any());
         definition.access = 'public';
@@ -107,6 +137,12 @@ export class ComputedNode {
     constructor(key: string, value: namedTypes.FunctionExpression | namedTypes.ArrowFunctionExpression) {
         this.key = key;
         this.value = value;
+    }
+
+    public toJs() {
+        const property = b.property('init', b.identifier(this.key), this.value);
+        property.comments = this.comments;
+        return property;
     }
 
     public toTsClass() {
@@ -153,6 +189,12 @@ export class PropNode {
         this.value = value;
     }
 
+    public toJs() {
+        const property = b.property('init', b.identifier(this.key), this.value);
+        property.comments = this.comments;
+        return property;
+    }
+
     public toTsClass() {
         const definition = b.classProperty(b.identifier(this.key), null, any());
         definition.access = 'public';
@@ -173,6 +215,12 @@ export class WatchNode {
     constructor(key: string, value: namedTypes.FunctionExpression) {
         this.key = key;
         this.value = value;
+    }
+
+    public toJs() {
+        const property = b.property('init', b.identifier(this.key), this.value);
+        property.comments = this.comments;
+        return property;
     }
 
     public toTsClass() {
@@ -200,6 +248,12 @@ export class MethodNode {
     constructor(key: string, value: namedTypes.FunctionExpression) {
         this.key = key;
         this.value = value;
+    }
+
+    public toJs() {
+        const property = b.property('init', b.identifier(this.key), this.value);
+        property.comments = this.comments;
+        return property;
     }
 
     public toTsClass() {
