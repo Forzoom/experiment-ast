@@ -8,14 +8,15 @@ import * as parser from '@babel/parser';
 import {
     Extract,
     getScriptContent,
+    routerLifecycleNames,
+    lifecycleNames,
 } from '@/utils';
 import {
     DataNode, ComputedNode, PropNode, MethodNode, WatchNode, VueNode, LifecycleNode,
 } from '@/gen/node';
 import plugin from '@/gen/plugins/addParamsTypeAnnotation';
 
-const routerLifecycleNames = [ 'beforeRouteEnter', 'beforeRouteUpdate', 'beforeRouteLeave' ];
-const lifecycleNames = [ 'beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed' ].concat(routerLifecycleNames);
+
 const importDeclarationMap: {
     [source: string]: namedTypes.ImportDeclaration,
 } = {};

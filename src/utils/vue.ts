@@ -1,4 +1,6 @@
-import fs from 'fs';
+export const routerLifecycleNames = [ 'beforeRouteEnter', 'beforeRouteUpdate', 'beforeRouteLeave' ];
+export const lifecycleNames = [ 'beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed' ].concat(routerLifecycleNames);
+export const topLevelNames = [ 'render' ].concat(lifecycleNames);
 
 export function getScriptContent(code: string) {
     let tag = '<script>';

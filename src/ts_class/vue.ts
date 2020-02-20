@@ -13,8 +13,9 @@ import {
     camelCaseWithDollar,
     any,
     getScriptContent,
+    topLevelNames,
 } from '@/utils';
-import { VueNode, DataNode, PropNode, ComputedNode, WatchNode, MethodNode } from '@/gen/node';
+import { VueNode, DataNode, PropNode, ComputedNode, WatchNode, MethodNode, LifecycleNode } from '@/gen/node';
 
 /**
  * 对于vue文件进行处理
@@ -22,12 +23,21 @@ import { VueNode, DataNode, PropNode, ComputedNode, WatchNode, MethodNode } from
 export default function(input: string, output: string) {
     console.info(input, output);
     const extname = path.extname(input);
-    if (extname !== '.vue') {
-        console.warn(input + ' isnt a vue file');
+    if (extname !== '.vue' && extname !== '.ts') {
+        console.warn(input + ' isnt a vue/ts file');
         return;
     }
     const originalCode = fs.readFileSync(input, 'utf-8');
-    const scriptContent = getScriptContent(originalCode);
+    let scriptContent: { header: string, footer: string, jsScript: string } | null = null;
+    if (extname === '.vue') {
+        scriptContent = getScriptContent(originalCode);
+    } else {
+        scriptContent = {
+            header: '',
+            footer: '',
+            jsScript: originalCode,
+        };
+    }
     if (!scriptContent) {
         console.warn(input + ' script is lost');
         return;
@@ -62,6 +72,38 @@ export default function(input: string, output: string) {
                     param.typeAnnotation = null;
                 }
             });
+            this.traverse(p);
+        },
+        visitArrowFunctionExpression(p) {
+            (p.value as namedTypes.ArrowFunctionExpression).params.forEach(param => {
+                if (param.type === 'Identifier') {
+                    param.typeAnnotation = null;
+                } else if (param.type === 'ObjectPattern') {
+                    param.typeAnnotation = null;
+                }
+            });
+            this.traverse(p);
+        },
+        visitVariableDeclarator(p) {
+            const declarator = p.value as namedTypes.VariableDeclarator;
+            const init = declarator.init;
+            if (init && init.type === 'TSAsExpression') {
+                declarator.init = init.expression;
+            }
+            this.traverse(p);
+        },
+        visitMemberExpression(p) {
+            const expression = p.value as namedTypes.MemberExpression;
+            if (expression.object.type === 'TSNonNullExpression') {
+                expression.object = expression.object.expression;
+            }
+            this.traverse(p);
+        },
+        visitIdentifier(p) {
+            const identifier = p.value as namedTypes.Identifier;
+            if (identifier.typeAnnotation) {
+                identifier.typeAnnotation = null;
+            }
             this.traverse(p);
         },
     });
@@ -108,12 +150,15 @@ export default function(input: string, output: string) {
     const computedNodes: ComputedNode[] = [];
     const watchNodes: WatchNode[] = [];
     const methodNodes: MethodNode[] = [];
+    const lifecycleNodes: LifecycleNode[] = [];
 
     for (const item of classDeclaration.body.body) {
         if (item.type === 'ClassProperty') {
             if (item.decorators) {
                 // Prop
-                const node = new PropNode((item.key as namedTypes.Identifier).name, (item.decorators[0].expression as namedTypes.CallExpression).arguments[0]);
+                const args = (item.decorators[0].expression as namedTypes.CallExpression).arguments;
+                const type = args ? args[0] : null;
+                const node = new PropNode((item.key as namedTypes.Identifier).name, type);
                 node.comments = item.comments;
                 propNodes.push(node);
             } else {
@@ -136,25 +181,41 @@ export default function(input: string, output: string) {
                     node.comments = item.comments;
                     watchNodes.push(node);
                 } else {
-                    // method
-                    const node = new MethodNode((item.key as namedTypes.Identifier).name, item.value as namedTypes.FunctionExpression);
-                    node.comments = item.comments;
-                    methodNodes.push(node);
+                    const name = (item.key as namedTypes.Identifier).name;
+                    if (topLevelNames.indexOf(name) >= 0) {
+                        // lifecycle
+                        const node = new LifecycleNode(name, item.value as namedTypes.FunctionExpression);
+                        node.comments = item.comments;
+                        lifecycleNodes.push(node);
+                    } else {
+                        // method
+                        const node = new MethodNode(name, item.value as namedTypes.FunctionExpression);
+                        node.comments = item.comments;
+                        methodNodes.push(node);
+                    }
                 }
             }
         }
     }
 
     const vueNode = new VueNode(className!);
+    vueNode.imports = importDeclarations;
     vueNode.components = componentsList;
     vueNode.props = propNodes;
     vueNode.data = dataNodes;
     vueNode.computed = computedNodes;
     vueNode.watch = watchNodes;
     vueNode.methods = methodNodes;
+    vueNode.lifecycles = lifecycleNodes;
 
+    generatedAst.program.body.push(...vueNode.imports, ...other);
     generatedAst.program.body.push(vueNode.toJs());
-    const code = scriptContent.header + '\n<script>\n' + recast.print(generatedAst, { tabWidth: 4 }).code + '\n</script>\n' + scriptContent.footer;
+    let code: string = '';
+    if (extname === '.vue') {
+        code = scriptContent.header + '\n<script>\n' + recast.print(generatedAst, { tabWidth: 4 }).code + '\n</script>\n' + scriptContent.footer;
+    } else {
+        code = recast.print(generatedAst, { tabWidth: 4 }).code;
+    }
     
     fs.writeFileSync(output, code);
 }

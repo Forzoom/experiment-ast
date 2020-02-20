@@ -46,7 +46,13 @@ export class VueNode {
         properties.push(b.property('init', b.identifier('props'), b.objectExpression((this.props || []).map(node => node.toJs()))));
         properties.push(b.property('init', b.identifier('data'), dataFn));
         properties.push(b.property('init', b.identifier('computed'), b.objectExpression((this.computed || []).map(node => node.toJs()))));
+        properties.push(b.property('init', b.identifier('watch'), b.objectExpression((this.watch || []).map(node => node.toJs()))));
         properties.push(b.property('init', b.identifier('methods'), b.objectExpression((this.methods || []).map(node => node.toJs()))));
+        properties.push(...(this.lifecycles || []).map(node => {
+            const property = b.property('init', b.identifier(node.key), node.value);
+            property.comments = node.comments;
+            return property;
+        }));
         const obj = b.objectExpression(properties);
         const exportDefault = b.exportDefaultDeclaration(obj);
         return exportDefault;
@@ -190,7 +196,11 @@ export class PropNode {
     }
 
     public toJs() {
-        const property = b.property('init', b.identifier(this.key), this.value);
+        let value = this.value;
+        if (!value) {
+            value = b.objectExpression([]);
+        }
+        const property = b.property('init', b.identifier(this.key), value);
         property.comments = this.comments;
         return property;
     }
@@ -218,7 +228,16 @@ export class WatchNode {
     }
 
     public toJs() {
-        const property = b.property('init', b.identifier(this.key), this.value);
+        let key: namedTypes.Identifier | namedTypes.StringLiteral | null = null;
+        if (this.key[0] === '$') {
+            key = b.stringLiteral(this.key);
+        } else {
+            key = b.identifier(this.key);
+        }
+        // tip: 这里直接使用原本的functionExpression存在问题，将无法生成正确的function关键字
+        // 也可以通过赋予一个函数名字来解决这个问题
+        const functionExpression = b.functionExpression(null, this.value.params, this.value.body);
+        const property = b.property('init', key, functionExpression);
         property.comments = this.comments;
         return property;
     }
