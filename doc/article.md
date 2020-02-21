@@ -129,8 +129,8 @@ const code = recast.print(ast, {
 
 ```javascript
 import fs from 'fs';
-const dir = '/Volumes/Repo2/repo/vue/tourye_web_ts/src';
-const dist = '/Volumes/Repo2/repo/vue/tourye_web_ts_ast/src';
+const dir = '/Volumes/Repo2/repo/vue/project/src';
+const dist = '/Volumes/Repo2/repo/vue/project_ast/src';
 const pageDir = dir + '/pages';
 const queue = [ pageDir ];
 
