@@ -16,16 +16,10 @@ import {
 } from '@/gen/node';
 import plugin from '@/gen/plugins/addParamsTypeAnnotation';
 
-
-const importDeclarationMap: {
-    [source: string]: namedTypes.ImportDeclaration,
-} = {};
-
 function handleImport(imports: namedTypes.ImportDeclaration[]) {
     imports.forEach((importDeclaration) => {
         if (importDeclaration.source.type === 'Literal' && typeof importDeclaration.source.value == 'string') {
             importDeclaration.source.value = (importDeclaration.source.value as string).replace(/\.js$/, '');
-            importDeclarationMap[importDeclaration.source.value] = importDeclaration;
         }
     });
 }
@@ -259,7 +253,12 @@ export default function(input: string, output: string) {
 
     generatedAst.program.body.push(...vueNode.imports, ...other);
     generatedAst.program.body.push(exportDefault);
-    const code = scriptContent.header + '\n<script lang="ts">\n' + recast.print(generatedAst, { tabWidth: 4 }).code + '\n</script>\n' + scriptContent.footer;
+    const generatedCode = recast.print(generatedAst, {
+        tabWidth: 4,
+        quote: 'single',
+        trailingComma: true,
+    }).code;
+    const code = scriptContent.header + '\n<script lang="ts">\n' + generatedCode + '\n</script>\n' + scriptContent.footer;
     
     fs.writeFileSync(output, code);
 }

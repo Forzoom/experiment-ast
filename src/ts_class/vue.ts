@@ -220,6 +220,8 @@ export default function(input: string, output: string) {
     vueNode.methods = methodNodes;
     vueNode.lifecycles = lifecycleNodes;
 
+    vueNode.comments = exportDefaultDeclaration.comments;
+
     generatedAst.program.body.push(...vueNode.imports, ...other);
     generatedAst.program.body.push(vueNode.toJs());
     let code: string = '';

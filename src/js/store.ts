@@ -103,16 +103,47 @@ export default function(input: string, output: string) {
         moduleObject = declaration as namedTypes.ObjectExpression;
 
         const nodes = handleModule(interfaceName, moduleObject);
-        const generatedAst = recast.parse(''); // program这个内容，但是没有body，在body中会有ImportDeclaration和ExportDefaultDeclaration内容
+        const generatedAst = recast.parse('');
         generatedAst.program.body.push(...importDeclarations, importModuleFromVuex, importRootStateFromStoreDTS);
         generatedAst.program.body.push(...other);
         generatedAst.program.body.push(...nodes);
         generatedAst.program.body.push(exportDefaultM);
         const code = recast.print(generatedAst, {
             tabWidth: 4,
+            quote: 'single',
+            trailingComma: true,
         }).code;
-        fs.writeFileSync(output, code);
+        fs.writeFileSync(output, code + '\n');
     } else {
-        fs.writeFileSync(output, originalCode);
+        let interfacePropertyList: namedTypes.TSPropertySignature[] = [];
+        interfacePropertyList = importDeclarations.map(declaration => {
+            const source = (declaration.source as namedTypes.StringLiteral).value;
+            const name = path.basename(source);
+            const signature = tsPropertySignature(name, 'any');
+            return signature;
+        });
+        // ModuleState
+        const exportStateNode = b.exportNamedDeclaration(
+            b.tsInterfaceDeclaration(
+                b.identifier(interfaceName),
+                b.tsInterfaceBody(interfacePropertyList)
+            ),
+            [],
+            null
+        );
+
+        // 需要添加一个state
+        const generatedAst = recast.parse('');
+        generatedAst.program.body.push(...importDeclarations);
+        generatedAst.program.body.push(exportStateNode);
+        generatedAst.program.body.push(...other);
+        generatedAst.program.body.push(exportDefaultDeclaration);
+        // generatedAst.program.body.push(b.line());
+        const code = recast.print(generatedAst, {
+            tabWidth: 4,
+            quote: 'single',
+            trailingComma: true,
+        }).code;
+        fs.writeFileSync(output, code + '\n');
     }
 }

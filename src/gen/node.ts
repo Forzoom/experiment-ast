@@ -8,6 +8,7 @@ import {
     parseMemberExpression,
     formatMemberExpression,
     camelCaseWithDollar,
+    camelCaseWithFirstLetter,
     importFromVuePropertyDecorator,
 } from '@/utils';
 
@@ -67,13 +68,14 @@ export class VueNode {
         }));
         const obj = b.objectExpression(properties);
         const exportDefault = b.exportDefaultDeclaration(obj);
+        exportDefault.comments = this.comments;
         return exportDefault;
     }
 
     public toTsClass() {
         // 定义class
         const clazz = b.classDeclaration(
-            b.identifier(this.name),
+            b.identifier(camelCaseWithFirstLetter(this.name)),
             b.classBody([
                 ...(this.props || []).map(node => node.toTsClass()),
                 ...(this.data || []).map(node => node.toTsClass()),
@@ -102,6 +104,26 @@ export class VueNode {
         ];
         const exportDefault = b.exportDefaultDeclaration(clazz);
         exportDefault.comments = this.comments;
+
+        const importMap: {
+            [source: string]: namedTypes.ImportDeclaration,
+        } = {};
+        if (this.imports) {
+            let index = -1;
+            for (let i = 0, len = this.imports.length; i < len; i++) {
+                const importDeclaration = this.imports[i];
+                const source = importDeclaration.source;
+                if (source.type === 'Literal' && typeof source.value == 'string') {
+                    importMap[source.value] = importDeclaration;
+                    if (source.value == 'vue') {
+                        index = i;
+                    }
+                }
+            }
+            if (index >= 0) {
+                this.imports.splice(index, 1);
+            }
+        }
 
         // 处理vue-property-decorator
         const importFromVPD = importFromVuePropertyDecorator([

@@ -15,8 +15,11 @@
 8. [x] 有些文件没有被处理
 9. [x] 添加router相关的处理
 10. [ ] 删除params最后的逗号
-11. [ ] 处理vue-property-decorator下的vue文件
+11. [x] 处理vue-property-decorator下的vue文件
 12. [ ] 考虑是否能对less文件进行处理
-13. [ ] 处理component/filter逻辑
+13. [x] 处理component/filter逻辑
 14. [x] 处理render函数
-15. [ ] 处理export default的comments
+15. [x] 处理export default的comments
+16. [ ] 在必要的时候补充store引入
+17. [x] 处理router中的children逻辑
+18. [x] 处理router中的钩子
