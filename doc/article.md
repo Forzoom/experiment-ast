@@ -25,7 +25,7 @@ function foo() {
 }
 ```
 
-对应的AST可能是下图这样的
+对应的AST可能是下图这样的，一个简单的树形结构（当然这里做了很大程度的简化，实际上要复杂地多）。
 
 <img src="https://static.playground.forzoom.tech/article/2.png" />
 
@@ -47,6 +47,41 @@ function foo() {
 
 如果对于编译原理了解的不是那么清楚的话，那么也可以通过recast.parse一些代码，来了解应该如何写，之后依葫芦画瓢编写代码就可以。
 
+以下是一段代码示例:
+
+```javascript
+// 操作AST中的一些节点
+import {
+    builders as b,
+} from 'ast-types';
+
+const clazz = b.classDeclaration(
+    b.identifier(camelCaseWithFirstLetter('MyComponent')),
+    b.classBody([]),
+    b.identifier('Vue')
+);
+clazz.decorators = [
+    b.decorator(
+        b.callExpression(
+            b.identifier('Component'),
+            [
+                b.objectExpression([
+                    b.property('init', b.identifier('name'), b.literal('MyComponent')),
+                ],
+            ],
+        )
+    )
+];
+```
+
+```javascript
+// 上个代码片段所对应的代码
+@Component({
+    name: 'MyComponent',
+})
+class MyComponent extends Vue {}
+```
+
 #### 选择parser
 
 在recast.parse解析代码时，会默认使用[esprima](https://www.npmjs.com/package/esprima)来进行语法解析，esprima（目前为4.0.1版本）对js新语法已经有了较多的支持，但是对于目前的项目中说，还是有部分语法无法解析。为了解决这个问题，recast也可以自定义所使用的语法解析器。
@@ -62,6 +97,7 @@ const ast = recast.parse(jsScript, {
                 plugins: [
                     'estree', // 支持estree格式
                     'decorators-legacy', // 支持修饰器语法
+                    // 'typescript', 用于解析typescript
                 ],
                 tokens: true, // 必要的参数。默认为false，解析结果中缺少tokens内容，当缺少tokens时，recast将会重新使用esprima进行解析操作
             }))
@@ -69,6 +105,22 @@ const ast = recast.parse(jsScript, {
     },
     tabWidth: 4,
 });
+```
+
+#### 对生成的代码进行细节调整
+
+目前使用[@vue/cli](https://www.npmjs.com/package/@vue/cli)生成项目过程中，都会提示使用tslint或eslint来帮助保持代码的整洁，如果你不是使用@vue/cli来搭建项目的话，依旧推荐在项目中加上tslint或eslint。
+
+这些库提供了一些代码规范规则，例如：“所以的引号都应该使用单引号”这样的规范，然而使用recast.print生成的代码中默认使用双引号。最终选择还是依据项目的实际情况而定，为此recast也提供一些配置选项，使其能够更灵活地生成代码。
+
+```javascript
+// 使用recast将AST转换成js代码
+const code = recast.print(ast, {
+    tabWidth: 4, // 使用的空格数量
+    quote: 'single', // 使用单引号或者双引号
+    trailingComma: true, // 使用启用trailingComma
+}).code;
+
 ```
 
 ### 遍历文件
@@ -106,9 +158,13 @@ while (queue.length > 0) {
 }
 ```
 
-### 更进一步
+### 后续内容
 
-既然可以完成迁移到ts语法的过程，在Vue@3正式发布之后，可能会考虑是否能将旧代码，转换成composition-api的格式。
+目前在自己的项目上测试，虽然已经把好多工作量自动化了，但还是好多啊（摔！
+
+还有一个我创建的npm组件库large-list，之前使用class的形式来写，应该是因为引入了vue-property-decorator逻辑，所以最终使用rollup打包不进行uglify情况下有27K大小。使用这个库将class形式代码转换成VueOptions形式，之后再使用rollup打包同样不进行uglify只有4K大小，既能让我使用class形式来编写代码，也让最终发布用的代码足够地小。
+
+另外既然可以完成迁移到ts语法的过程，在Vue@3正式发布之后，可能会考虑是否能将旧代码，转换成composition-api的格式。
 
 <img src="https://static.playground.forzoom.tech/article/footer.jpg" />
 
