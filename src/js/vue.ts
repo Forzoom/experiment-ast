@@ -15,7 +15,8 @@ import {
 import {
     DataNode, ComputedNode, PropNode, MethodNode, WatchNode, VueNode, LifecycleNode,
 } from '@/gen/node';
-import plugin from '@/gen/plugins/addParamsTypeAnnotation';
+import addParamsTypeAnnotation from '@/gen/plugins/addParamsTypeAnnotation';
+import addImportStore from '@/gen/plugins/addImportStore';
 
 function handleImport(imports: namedTypes.ImportDeclaration[]) {
     imports.forEach((importDeclaration) => {
@@ -250,7 +251,8 @@ export default async function(input: string, output: string) {
         vueNode.comments = (originalExportDefault as namedTypes.ExportDefaultDeclaration).comments;
     }
     const exportDefault = vueNode.toTsClass();
-    plugin(vueNode);
+    addParamsTypeAnnotation(vueNode);
+    addImportStore(vueNode);
 
     generatedAst.program.body.push(...vueNode.imports, ...other);
     generatedAst.program.body.push(exportDefault);
