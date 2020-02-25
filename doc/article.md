@@ -1,13 +1,13 @@
 > 项目整理中，完成后补上Github链接
 
-[Typescript](https://www.typescriptlang.org)正广泛成为前端工程师开发项目的首选，我手头上有一些使用js编写Vue项目，最近准备使用ts重写。项目中单单是页面的数量就超过100个，更不用提组件的数量，如果对这么多Vue文件进行一一重写的话，工程量浩大，并且十分枯燥。其实在此之前也手动转换过几个项目，发现重写过程都是相似的，通过代码是有可能自动地完成重写。当然从js转换到ts下，不可避免地会出现类型问题，现在的自动重写程序只要求完成重复性地工作，当真的需要类型信息时，还是需要手动处理。
+[Typescript](https://www.typescriptlang.org)正广泛成为前端工程师开发项目的首选，我手头上有一些使用js编写的Vue项目，最近准备使用ts重写。项目中单单是页面的数量就超过100个，更不用提组件的数量，如果对这么多Vue文件进行一一重写的话，工程量浩大，并且十分枯燥。其实在此之前也手动转换过几个项目，发现转换过程大多都是重复劳动，是有可能通过程序实现自动转换。当然从js转换成ts，不可避免地会出现类型问题，所以只要求完成重复性地工作，当真的需要类型信息时，还是需要手动处理。
 
 使用ts来编写项目时，可以使用两种不同的代码风格：
 
 1. 使用Vue.extend方法实现。
 2. 使用class语法配合[vue-property-decorator](https://www.npmjs.com/package/vue-property-decorator)实现。
 
-具体应该选择哪种方案，见仁见智。我所采用的是方法2。为什么选择它，如果使用方法1的话重写起来岂不是很方便？选择方法2是因为在Vue中大量使用`this`关键字，使用class形式更加符合直觉——所有的内容都是在class实例上。
+具体应该选择哪种方案，见仁见智。我所采用的是方法2。为什么选择它，如果使用方法1的话重写起来岂不是很方便？选择方法2是因为在Vue中大量使用`this`关键字，使用class形式更加符合直觉——所有的内容都是在class实例上（其实可能只是我比较喜欢折腾( ´･ᴗ･` )。
 
 ### 实现思路
 
@@ -33,7 +33,7 @@ function foo() {
 
 <img src="https://static.playground.forzoom.tech/article/1.png" />
 
-之后再生成代码就可以了。
+之后再用修改后的AST生成代码就可以了。
 
 ### 代码和AST的转换
 
@@ -97,7 +97,7 @@ const ast = recast.parse(jsScript, {
                 plugins: [
                     'estree', // 支持estree格式
                     'decorators-legacy', // 支持修饰器语法
-                    // 'typescript', 用于解析typescript
+                    // 'typescript', 支持解析typescript
                 ],
                 tokens: true, // 必要的参数。默认为false，解析结果中缺少tokens内容，当缺少tokens时，recast将会重新使用esprima进行解析操作
             }))
@@ -169,3 +169,43 @@ while (queue.length > 0) {
 <img src="https://static.playground.forzoom.tech/article/footer.jpg" />
 
 主子（看我的眼神，不点个赞再走吗~
+
+---
+
+### 修改less
+
+在项目迁移过程中，除了对于js内容进行修改之外，也有对样式文件的修改。目前项目中使用的是less，虽然less语法比较简单，甚至可以直接使用多次正则替换来完成修改，但是谁让我比较喜欢折腾呢。( ´･ᴗ･` )
+
+虽然css代码和js代码差别很大，但这次仍旧通过操作AST的方式来完成修改。
+
+依靠[postcss](https://www.npmjs.com/package/postcss)将css转换成AST（我觉得了解postcss也很重要呢），不过和recast不同，postcss并不会直接返回AST，需要使用postcss的插件（plguin）来完成这次修改。
+
+下面例子中编写了一个简单的插件:
+
+```javascript
+import postcss from 'postcss';
+const code = `
+    .rule {
+        width: 20px;
+    }
+`;
+const myPlugin = postcss.plugin('postcss-my-plugin', (root, result) => {
+    root.walkRule((rule) => {
+        rule.walkDecl((decl) => {
+            console.log(decl.prop, decl.value); // 将输出 width 和 20px
+            decl.value = '40px'; // 很简单滴就将20px修改成了40px
+        });
+    });
+});
+postcss([ myPlugin ]).process(code).then((result) => {
+    /**
+     * 输出修改过的代码
+     * .rule {
+     *     width: 40px;
+     * }
+     */
+    console.log(result.css);
+})
+```
+
+更多关于使用postcss来修改less的方法就不多写了，有需要的童鞋可以自己研究一下。

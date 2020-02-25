@@ -6,12 +6,6 @@ import { builders as b, namedTypes } from 'ast-types';
 import * as K from 'ast-types/gen/kinds';
 import * as parser from '@babel/parser';
 import {
-    Extract,
-    parseMemberExpression,
-    formatMemberExpression,
-    importFromVuePropertyDecorator,
-    camelCaseWithDollar,
-    any,
     getScriptContent,
     topLevelNames,
 } from '@/utils';

@@ -5,6 +5,7 @@ import path from 'path';
 import { builders as b, namedTypes } from 'ast-types';
 import * as K from 'ast-types/gen/kinds';
 import * as parser from '@babel/parser';
+import handleLess from '@/less';
 import {
     Extract,
     getScriptContent,
@@ -109,7 +110,7 @@ function handleWatch(list: namedTypes.Property[]) {
 /**
  * 对于vue文件进行处理
  */
-export default function(input: string, output: string) {
+export default async function(input: string, output: string) {
     console.info(input, output);
     const extname = path.extname(input);
     if (extname !== '.vue') {
@@ -258,6 +259,16 @@ export default function(input: string, output: string) {
         quote: 'single',
         trailingComma: true,
     }).code;
+
+    // 处理less
+    const startPos = scriptContent.footer.indexOf('<style lang="less">');
+    if (startPos >= 0) {
+        const endPos = scriptContent.footer.indexOf('</style>');
+        const lessCode = scriptContent.footer.substring(startPos + 19, endPos);
+        const lessResult = await handleLess(lessCode);
+        scriptContent.footer = scriptContent.footer.substr(0, startPos + 19) + lessResult.css + scriptContent.footer.substr(endPos);
+    }
+
     const code = scriptContent.header + '\n<script lang="ts">\n' + generatedCode + '\n</script>\n' + scriptContent.footer;
     
     fs.writeFileSync(output, code);

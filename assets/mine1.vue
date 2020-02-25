@@ -130,10 +130,11 @@
         <NewTab :selected="4"></NewTab>
     </div>
 </template>
+
 <script lang="ts">
 import {
     ID_MINE,
-} from "@/lib/mta";
+} from '@/lib/mta';
 
 import {
     clickStat,
@@ -149,23 +150,23 @@ import {
     LOGO,
     SHOP_ORDER_URL,
     ROUTE_NAME,
-} from "@/lib/constant";
+} from '@/lib/constant';
 
 import {
     registerShare,
 } from '@/lib/utils';
 
-import { Component, Vue, Prop, Watch } from "vue-property-decorator";
-import { Route } from "vue-router";
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Route } from 'vue-router';
 
 // test
 @Component({
-    name: "Mine",
+    name: 'Mine',
 
     components: {
         NewTab,
         Item,
-    }
+    },
 })
 export default class Mine extends Vue {
     // test
@@ -198,7 +199,7 @@ export default class Mine extends Vue {
     }
 
     // test
-    @Watch("$props.value")
+    @Watch('$props.value')
     public onPropsValueChange(b: any) {
         console.log('test');
     }
@@ -322,6 +323,7 @@ export default class Mine extends Vue {
     }
 }
 </script>
+
 <style lang="less">
     @import '../../lib/style/mixins.less';
     @import '../../lib/util.less';
@@ -332,79 +334,79 @@ export default class Mine extends Vue {
         .mine-user {
             position: relative;
             box-sizing: border-box;
-            .px2rem6(padding, 0, 14);
-            .px2rem6(height, 117);
+            padding: 0px 14px;
+            height: 117px;
             background: url(../../assets/user-bg.png) center no-repeat;
             background-size: cover;
         }
         .user {
             position: relative;
-            .px2rem6(top, 40);
-            .px2rem6(padding, 15, 0, 15, 30);
-            .px2rem6( border-top-left-radius, 4);
-            .px2rem6( border-top-right-radius, 4);
+            top: 40px;
+            padding: 15px 0px 15px 30px;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
             background: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
             .avatar {
-                .px2rem6(width, 48);
-                .px2rem6(height, 48);
+                width: 48px;
+                height: 48px;
                 border-radius:50%;
                 background-color: @color-avatar-bg;
             }
             .name {
-                .px2rem6(width, 120);
-                .px2rem6(max-height, 44);
-                .px2rem6(margin-left, -50);
-                .px2rem6(padding, 0, 5);
+                width: 120px;
+                max-height: 44px;
+                margin-left: -50px;
+                padding: 0px 5px;
                 font-weight: bold;
                 overflow: hidden;
             }
             .id {
                 box-sizing: border-box;
-                .px2rem6(width, 80);
-                .px2rem6(height, 25);
-                .px2rem6(padding-left, 10);
-                .px2rem6(line-height, 25);
-                .px2rem6( border-radius, 25, 0, 0, 25);
+                width: 80px;
+                height: 25px;
+                padding-left: 10px;
+                line-height: 25px;
+                 border-radius: 25px 0px 0px 25px;
                 background-color: rgba(204, 28, 36, 1);
                 color: white;
             }
         }
         .mine-account {
             box-sizing: border-box;
-            .px2rem6(padding, 0, 14, 0);
-            .px2rem6(height, 190);
+            padding: 0px 14px 0px;
+            height: 190px;
             &>div:first-child {
-                .px2rem6(height, 80);
+                height: 80px;
             }
         }
         .account {
             box-sizing: border-box;
-            .px2rem6(height, 90);
-            .px2rem6(margin-bottom, 10);
+            height: 90px;
+            margin-bottom: 10px;
             background: white;
-            .px2rem6( border-radius, 4);
+             border-radius: 4px;
             display: flex;
             justify-content: space-around;
             align-items: center;
             text-align: center;
             .num {
-                .px2rem6(line-height, 28);
-                .px2rem6(font-size, 20);
+                line-height: 28px;
+                font-size: 20px;
                 color:#333333;
                 font-weight: bold;
             }
             .title {
-                .px2rem6(margin-top, 10);
-                .px2rem6(line-height, 20);
-                .px2rem6(font-size, 14);
+                margin-top: 10px;
+                line-height: 20px;
+                font-size: 14px;
                 color: #333333;
             }
             .icon {
                  color:#333333;
-                .px2rem6(font-size, 24);
+                font-size: 24px;
             }
             .gift {
                 position: relative;
@@ -417,12 +419,12 @@ export default class Mine extends Vue {
         }
         .content-wrap  {
             .content-section {
-                .px2rem6(padding, 0, 14);
-                .px2rem6(margin-bottom, 10);
+                padding: 0px 14px;
+                margin-bottom: 10px;
                 .list-item-wrap {
                     .fl {
                         .icon {
-                            .px2rem6(font-size, 19);
+                            font-size: 19px;
                         }
                     }
                 }

@@ -17,3 +17,9 @@ declare module 'ast-types/gen/namedTypes' {
         type PrimitiveLiteral = StringLiteral | NumericLiteral | BooleanLiteral | NullLiteral;
     }
 }
+
+declare module 'postcss' {
+    interface AtRule extends ContainerBase {
+        important: boolean;
+    }
+}

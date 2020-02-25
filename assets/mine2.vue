@@ -130,10 +130,11 @@
         <NewTab :selected="4"></NewTab>
     </div>
 </template>
+
 <script>
 import {
     ID_MINE,
-} from '@/lib/mta.js';
+} from "@/lib/mta";
 
 import {
     clickStat,
@@ -149,106 +150,132 @@ import {
     LOGO,
     SHOP_ORDER_URL,
     ROUTE_NAME,
-} from '@/lib/constant.js';
+} from "@/lib/constant";
 
 import {
     registerShare,
 } from '@/lib/utils';
 
+import { Component, Vue, Prop, Watch } from "vue-property-decorator";
+import { Route } from "vue-router";
+
 // test
 export default {
-    name: 'Mine',
+    name: "Mine",
+
     components: {
         NewTab,
         Item,
     },
+
     props: {
         // test
         test1: {
             type: String,
-        },
+        }
     },
-    data() {
+
+    data: function data() {
         return {
             // test
-            a: 'a',
+            a: 'a'
         };
     },
+
     computed: {
-        ...mapState({
-            /** 个人基础信息 */
-            userBasicInfo: state => state.util.userBasicInfo,
-            /** 个人账户 */
-            userAccount: state => state.user.userAccount,
-            /** 是否有未读礼品 */
-            hasUnreadGiftOrder: state => state.gift.hasUnreadGiftOrder,
-        }),
-        // test
-        test() {
-            return '1';
+        /** 个人基础信息 */
+        userBasicInfo: function() {
+            return store.state.util.userBasicInfo;
         },
+
+        /** 个人账户 */
+        userAccount: function() {
+            return store.state.user.userAccount;
+        },
+
+        /** 是否有未读礼品 */
+        hasUnreadGiftOrder: function() {
+            return store.state.gift.hasUnreadGiftOrder;
+        },
+
+        // test
+        test: function() {
+            return '1';
+        }
     },
+
     watch: {
         // test
-        '$props.value'(b) {
+        "$props.value": function(b) {
             console.log('test');
-        },
+        }
     },
+
     methods: {
         // test
-        myEquipment(a) {
+        myEquipment: function(a) {
             window.location.href = SHOP_ORDER_URL;
         },
-        myGift() {
+
+        myGift: function() {
             this.$router.push({
                 name: ROUTE_NAME.GIFT_ORDER,
             });
         },
-        myAddress() {
+
+        myAddress: function() {
             this.$router.push({
                 name: ROUTE_NAME.GIFT_ADDRESS,
             });
         },
-        myCrowdfounding() {
+
+        myCrowdfounding: function() {
             clickStat(ID_MINE, { crowd: true, });
             this.$router.push({ name: ROUTE_NAME.CROWD_LIST, });
         },
-        myOrder() {
+
+        myOrder: function() {
             clickStat(ID_MINE, { order: true, });
             this.$router.push({
                 name: ROUTE_NAME.ORDER_LIST,
             });
         },
-        mypoints() {
+
+        mypoints: function() {
             clickStat(ID_MINE, { fund: true, });
             this.$router.push({
                 name: 'user_account',
             });
         },
+
         /**
          * 点击代金券
          */
-        myVoucher() {
+        myVoucher: function() {
             clickStat(ID_MINE, { coupon: true, });
             this.$router.push({ name: ROUTE_NAME.VOUCHER, });
         },
-        myDynamic() {
+
+        myDynamic: function() {
             clickStat(ID_MINE, { dynamic: true, });
             this.$router.push({ name: 'dynamic', });
         },
-        matchRecord() {
+
+        matchRecord: function() {
             clickStat(ID_MINE, { record: true, });
             this.$router.push({
                 name: 'matchRecord',
             });
         },
-        feedback() {
+
+        feedback: function() {
             clickStat(ID_MINE, { problem: true, });
             this.$router.push({
                 name: ROUTE_NAME.FEEDBACK,
             });
         },
-        phoneBinding() {
+
+        phoneBinding: function() {
             clickStat(ID_MINE, { tel: true, });
             if (!this.userBasicInfo.mobile_bound) {
                 this.$router.push({
@@ -260,18 +287,20 @@ export default {
                 });
             }
         },
+
         /**
          * 点击“我的支持”
          */
-        mySupport() {
+        mySupport: function() {
             clickStat(ID_MINE, { supported: true, });
             this.$router.push({
                 name: 'supported',
             });
-        },
+        }
     },
+
     // test
-    async beforeRouteEnter(to, from, next) {
+    beforeRouteEnter: async function(to, from, next) {
         store.commit('startRequest');
         await Promise.all([
             store.dispatch('getUserAccountInfo', {
@@ -282,8 +311,9 @@ export default {
         store.commit('endRequest');
         next();
     },
+
     // test
-    created() {
+    created: function() {
         store.commit('addJSSDKReadyCallback', () => {
             registerShare({
                 title: '个人中心', // 分享标题
@@ -299,9 +329,10 @@ export default {
                 imgUrl: LOGO, // 分享图标
             });
         });
-    },
+    }
 };
 </script>
+
 <style lang="less">
     @import '../../lib/style/mixins.less';
     @import '../../lib/util.less';
@@ -321,8 +352,8 @@ export default {
             position: relative;
             .px2rem6(top, 40);
             .px2rem6(padding, 15, 0, 15, 30);
-            .px2rem6(border-top-left-radius, unit(4));
-            .px2rem6(border-top-right-radius, 4);
+            .px2rem6( border-top-left-radius, 4);
+            .px2rem6( border-top-right-radius, 4);
             background: white;
             display: flex;
             justify-content: space-between;
