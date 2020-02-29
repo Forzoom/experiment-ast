@@ -1,3 +1,7 @@
+更新于2020-02-29
+
+1. 补充ast-types/def相关的说明
+
 > 项目整理中，完成后补上Github链接
 
 [Typescript](https://www.typescriptlang.org)正广泛成为前端工程师开发项目的首选，我手头上有一些使用js编写的Vue项目，最近准备使用ts重写。项目中单单是页面的数量就超过100个，更不用提组件的数量，如果对这么多Vue文件进行一一重写的话，工程量浩大，并且十分枯燥。其实在此之前也手动转换过几个项目，发现转换过程大多都是重复劳动，是有可能通过程序实现自动转换。当然从js转换成ts，不可避免地会出现类型问题，所以只要求完成重复性地工作，当真的需要类型信息时，还是需要手动处理。
@@ -41,13 +45,13 @@ function foo() {
 
 这里必须再提到两个概念，分别是**estree**和**ast-types**。
 
-[estree](https://github.com/estree/estree)是将js代码解析成AST的一个社区标准，也就是，最终生成的AST节点中有哪些值，目前基本上都应该参照estree中的说明进行实现。对这个标准有一些的了解，或者说对于编译原理有一定的了解，可以提高之后修改代码的效率。
+[estree](https://github.com/estree/estree)是将js代码解析成AST的一个社区标准，也就是，**最终生成的AST节点中有哪些值，目前基本上都应该参照estree中的说明进行实现。**对这个标准有一些的了解，或者说对于编译原理有一定的了解，可以提高之后修改代码的效率。
 
-[ast-types](https://www.npmjs.com/package/ast-types)是recast中所使用的库，提供了语法树节点定义、遍历等功能。ast-types中所定义的类型兼容estree，但实际使用中，感觉有时会有一些缺失，例如在某些情况下，会存在decorators字段不存在的情况，可以通过d.ts文件对ast-types中的类型定义进行扩展。
+#### 关于ast-types
 
-如果对于编译原理了解的不是那么清楚的话，那么也可以通过recast.parse一些代码，来了解应该如何写，之后依葫芦画瓢编写代码就可以。
+[ast-types](https://www.npmjs.com/package/ast-types)是recast中所使用的库，**提供了语法树节点定义、遍历等功能，在项目中被重度使用**。ast-types中所定义的类型兼容estree，但实际使用中，感觉有时会有一些缺失，例如在某些情况下，会存在decorators字段不存在的情况，可以通过d.ts文件对ast-types中的类型定义进行扩展。
 
-以下是一段代码示例:
+以下是一段代码示例，使用ast-types来构建AST
 
 ```javascript
 // 操作AST中的一些节点
@@ -80,6 +84,53 @@ clazz.decorators = [
     name: 'MyComponent',
 })
 class MyComponent extends Vue {}
+```
+
+上面的操作AST代码看起来让人害怕，其仅仅是对应3行ts代码。
+
+<img src="https://static.playground.forzoom.tech/article/emoticon/zhi_ming.jpg" />
+
+加上大部分人的编译原理课说不定已经还给老师，更别提js的语法。不过也别那么害怕，ast-types已经为我们准备好了小抄。
+在ast-types/def/core.ts文件中可以看到这样的代码。
+
+```javascript
+// ast-types/def/core.ts
+var BinaryOperator = or(
+    "==", "!=", "===", "!==",
+    "<", "<=", ">", ">=",
+    "<<", ">>", ">>>",
+    "+", "-", "*", "/", "%", "**",
+    "&",
+    "|", "^", "in",
+    "instanceof");
+
+def("BinaryExpression")
+    .bases("Expression")
+    .build("operator", "left", "right") // 所需要的参数
+    .field("operator", BinaryOperator)
+    .field("left", def("Expression")) // 要求是一个Expression
+    .field("right", def("Expression"));
+
+def("Identifier")
+    .bases("Expression", "Pattern") // 因为基于Expression再定义的Identifier，可以作为BinaryExpression的参数
+    .build("name")
+    .field("name", String)
+    .field("optional", Boolean, defaults["false"]);
+```
+
+上面其实是ast-types对于js语法的定义。**def的定义，将在builders中生成对应的函数，例如根据上面的定义，builders对象中应该有`binaryExpression`和`identifier`两个函数**，并且两个函数的参数都可以从上面代码中看出。当然如果使用IDE也会提示函数的参数，会更方便一些。
+
+```javascript
+import { builders as b } from 'ast-types';
+// a + b 所对应的代码
+b.binaryExpression('+', b.identifier('a'), b.identifier('b'));
+```
+
+如果对于编译原理了解的不是那么清楚的话，那么也可以通过recast.parse一些代码，来了解应该如何写，之后依葫芦画瓢编写代码就可以。
+
+```javascript
+const ast = recast.parse(`const foo = 'bar'`);
+console.log(ast.program.body); // 可以参照输出结果"逆向"写出ast操作代码
 ```
 
 #### 选择parser
