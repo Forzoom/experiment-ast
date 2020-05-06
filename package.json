@@ -24,6 +24,9 @@
     "webpack": "^4.41.5",
     "webpack-cli": "^3.3.10"
   },
+  "bin": {
+    "util-ast": "./bin/util-ast"
+  },
   "scripts": {
     "build": "webpack --config webpack.config.js",
     "main": "node ./dist/bundle.js"
