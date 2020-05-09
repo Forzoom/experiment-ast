@@ -1,3 +1,11 @@
 #! /usr/bin/env node
+var process = require('process');
+var util = require('../dist/bundle.js');
+var fs = require('fs');
 
-console.log('this is a bin content');
+var argv = process.argv;
+var cmd = argv[2];
+var src = argv[3];
+var dist = argv[4];
+
+console.log(Object.keys(util), cmd, src, dist);

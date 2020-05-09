@@ -5,7 +5,9 @@ import path from 'path';
 import { builders as b, namedTypes } from 'ast-types';
 import * as K from 'ast-types/gen/kinds';
 import * as parser from '@babel/parser';
-import handleLess from '@/less';
+import {
+    handleCode as handleLess,
+} from '@/less';
 import {
     Extract,
     getScriptContent,
