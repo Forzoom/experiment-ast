@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./src/example.ts");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/index.ts");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -1371,18 +1371,6 @@ eval("\nconst os = __webpack_require__(/*! os */ \"os\");\nconst hasFlag = __web
 /***/ (function(module, exports) {
 
 eval("module.exports = function(module) {\n\tif (!module.webpackPolyfill) {\n\t\tmodule.deprecate = function() {};\n\t\tmodule.paths = [];\n\t\t// module.parent = undefined by default\n\t\tif (!module.children) module.children = [];\n\t\tObject.defineProperty(module, \"loaded\", {\n\t\t\tenumerable: true,\n\t\t\tget: function() {\n\t\t\t\treturn module.l;\n\t\t\t}\n\t\t});\n\t\tObject.defineProperty(module, \"id\", {\n\t\t\tenumerable: true,\n\t\t\tget: function() {\n\t\t\t\treturn module.i;\n\t\t\t}\n\t\t});\n\t\tmodule.webpackPolyfill = 1;\n\t}\n\treturn module;\n};\n\n\n//# sourceURL=webpack:///(webpack)/buildin/module.js?");
-
-/***/ }),
-
-/***/ "./src/example.ts":
-/*!************************!*\
-  !*** ./src/example.ts ***!
-  \************************/
-/*! no exports provided */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./index */ \"./src/index.ts\");\n // handleStore('./assets/address1.js', './assets/address1.ts');\n// handle.handleJsVue('./assets/mine.vue', './assets/mine1.vue');\n\n_index__WEBPACK_IMPORTED_MODULE_0__[\"default\"].handleTsClassVue('/Volumes/Repo2/repo/rebirth-project/large-list/src/index.ts', '/Volumes/Repo2/repo/rebirth-project/large-list/src/index.js'); // handleVue('./assets/mine1.ts', './assets/mine2.ts');\n// handleRouter('./assets/router.js', './assets/router.ts');\n// handleVue('/Volumes/Repo2/repo/rebirth-project/large-list/src/index.ts', '/Volumes/Repo2/repo/rebirth-project/large-list/src/index.js');\n// handleVue('/Volumes/Repo2/repo/rebirth-project/large-list/src/utils.ts', '/Volumes/Repo2/repo/rebirth-project/large-list/src/utils.js');\n// const dir = '/Volumes/Repo2/repo/vue/tourye_web_ts/src';\n// const dist = '/Volumes/Repo2/repo/vue/tourye_web_ts_ast/src';\n// const componentDir = dir + '/components';\n// const featureDir = dir + '/features';\n// const pageDir = dir + '/pages';\n// const storeDir = dir + '/store';\n// const routerDir = dir + '/router';\n// const queue = [\n//     componentDir,\n//     featureDir,\n//     pageDir,\n//     storeDir,\n//     routerDir,\n// ];\n// const throttle = 800; // 最多处理文件数量\n// let count = 0;\n// let handleCount = 0;\n// (async () => {\n//     // 深度优先搜索\n//     while (queue.length > 0) {\n//         if (count >= throttle) {\n//             throw new Error(`handle over ${throttle} file`);\n//         }\n//         const filePath = queue.shift();\n//         if (filePath) {\n//             const stats = fs.statSync(filePath);\n//             const isDirectory = stats.isDirectory();\n//             if (isDirectory) {\n//                 // 如果是文件夹，加入queue\n//                 const children = fs.readdirSync(filePath);\n//                 queue.unshift(...children.map(child => filePath + '/' + child));\n//             } else {\n//                 // 如果是文件，判断是否以vue结尾\n//                 if (/.vue$/.test(filePath)) {\n//                     const output = dist + filePath.substr(dir.length);\n//                     fs.mkdirSync(path.dirname(output), {\n//                         recursive: true,\n//                         mode: 0o755,\n//                     });\n//                     await handle.handleJsVue(filePath, output);\n//                     handleCount++;\n//                     count++;\n//                 } else if (/.js$/.test(filePath) && /\\/store/.test(filePath)) {\n//                     const output = dist + filePath.substr(dir.length).replace(/.js$/, '.ts');\n//                     const origin = dist + filePath.substr(dir.length);\n//                     fs.mkdirSync(path.dirname(output), {\n//                         recursive: true,\n//                         mode: 0o755,\n//                     });\n//                     handle.handleJsStore(filePath, output);\n//                     // 如果原本js文件存在，那么就删除掉\n//                     if (fs.existsSync(origin)) {\n//                         fs.unlinkSync(origin);\n//                     }\n//                     handleCount++;\n//                     count++;\n//                 } else if (/.js$/.test(filePath) && /\\/router/.test(filePath)) {\n//                     const output = dist + filePath.substr(dir.length).replace(/.js$/, '.ts');\n//                     const origin = dist + filePath.substr(dir.length);\n//                     fs.mkdirSync(path.dirname(output), {\n//                         recursive: true,\n//                         mode: 0o755,\n//                     });\n//                     handle.handleJsRouter(filePath, output);\n//                     // 如果原本js文件存在，那么就删除掉\n//                     if (fs.existsSync(origin)) {\n//                         fs.unlinkSync(origin);\n//                     }\n//                     handleCount++;\n//                     count++;\n//                 }\n//             }\n//         }\n//     }\n//     console.info(`handle ${handleCount} files`);\n// })();\n\n//# sourceURL=webpack:///./src/example.ts?");
 
 /***/ }),
 
