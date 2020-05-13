@@ -8,7 +8,7 @@ var cmd = argv[2];
 var src = argv[3];
 var dist = argv[4];
 
-console.log(Object.keys(util), cmd, src, dist);
+console.log(util, cmd, src, dist);
 
 // 操作处理
 if (cmd === 'handleVueFileLess') {
