@@ -1,10 +1,10 @@
-import fs from 'fs';
-import path from 'path';
-import handle from './index';
+// import fs from 'fs';
+// import path from 'path';
+// import handle from './index';
 
 // handleStore('./assets/address1.js', './assets/address1.ts');
 // handle.handleJsVue('./assets/mine.vue', './assets/mine1.vue');
-handle.handleTsClassVue('/Volumes/Repo2/repo/rebirth-project/large-list/src/index.ts', '/Volumes/Repo2/repo/rebirth-project/large-list/src/index.js');
+// handle.handleTsClassVue('/Volumes/Repo2/repo/rebirth-project/large-list/src/index.ts', '/Volumes/Repo2/repo/rebirth-project/large-list/src/index.js');
 // handleVue('./assets/mine1.ts', './assets/mine2.ts');
 // handleRouter('./assets/router.js', './assets/router.ts');
 // handleVue('/Volumes/Repo2/repo/rebirth-project/large-list/src/index.ts', '/Volumes/Repo2/repo/rebirth-project/large-list/src/index.js');
@@ -88,3 +88,5 @@ handle.handleTsClassVue('/Volumes/Repo2/repo/rebirth-project/large-list/src/inde
 
 //     console.info(`handle ${handleCount} files`);
 // })();
+
+export const a = 'a';
