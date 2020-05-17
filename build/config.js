@@ -14,11 +14,6 @@ module.exports = exports = [
             format: 'esm',
         },
         plugins: [
-            babel({
-                babelHelpers: 'runtime',
-                exclude: 'node_modules/**',
-                extensions,
-            }),
             resolve({
                 extensions,
                 preferBuiltins: true,
@@ -30,47 +25,64 @@ module.exports = exports = [
                 ],
             }),
             commonjs(),
+            babel({
+                babelHelpers: 'runtime',
+                exclude: 'node_modules/**',
+                extensions,
+            }),
         ],
     },
-    // {
-    //     input: './src/index.ts',
-    //     output: {
-    //         file: './dist/experiment-ast.cjs.js',
-    //         format: 'cjs',
-    //     },
-    //     plugins: [
-    //         resolve({
-    //             extensions,
-    //             preferBuiltins: true,
-    //         }),
-    //         builtins(),
-    //         commonjs(),
-    //         babel({
-    //             babelHelpers: 'runtime',
-    //             exclude: 'node_modules/**',
-    //             extensions,
-    //         }),
-    //     ],
-    // },
-    // {
-    //     input: './src/index.ts',
-    //     output: {
-    //         file: './dist/experiment-ast.js',
-    //         name: 'LargeList',
-    //         format: 'umd',
-    //     },
-    //     plugins: [
-    //         resolve({
-    //             extensions,
-    //             preferBuiltins: true,
-    //         }),
-    //         builtins(),
-    //         commonjs(),
-    //         babel({
-    //             babelHelpers: 'runtime',
-    //             exclude: 'node_modules/**',
-    //             extensions,
-    //         }),
-    //     ],
-    // },
+    {
+        input: './src/index.ts',
+        output: {
+            file: './dist/experiment-ast.cjs.js',
+            format: 'cjs',
+        },
+        plugins: [
+            resolve({
+                babelHelpers: 'runtime',
+                extensions,
+                preferBuiltins: true,
+            }),
+            builtins(),
+            alias({
+                entries: [
+                    { find: '@', replacement: path.join(__dirname, '../src') }
+                ],
+            }),
+            commonjs(),
+            babel({
+                babelHelpers: 'runtime',
+                exclude: 'node_modules/**',
+                extensions,
+            }),
+        ],
+    },
+    {
+        input: './src/index.ts',
+        output: {
+            file: './dist/experiment-ast.js',
+            name: 'LargeList',
+            format: 'umd',
+        },
+        plugins: [
+            resolve({
+                babelHelpers: 'runtime',
+                extensions,
+                preferBuiltins: true,
+            }),
+            builtins(),
+            alias({
+                entries: [
+                    { find: '@', replacement: path.join(__dirname, '../src') }
+                ],
+            }),
+            commonjs(),
+            babel({
+                babelHelpers: 'runtime',
+                exclude: 'node_modules/**',
+                extensions,
+            }),
+        ],
+    },
 ];

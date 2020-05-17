@@ -1,6 +1,6 @@
 #! /usr/bin/env node
 var process = require('process');
-var util = require('../dist/bundle.js');
+var util = require('../dist/bundle.cjs.js');
 var argv = process.argv;
 var cmd = argv[2];
 var src = argv[3];
