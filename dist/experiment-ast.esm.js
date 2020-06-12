@@ -35213,182 +35213,6 @@ function getSection(code) {
   return result;
 }
 
-function parseMemberExpression(exp) {
-  if (exp.type !== 'MemberExpression') {
-    console.error(exp, ' is not a MemberExpression');
-    return [];
-  }
-
-  var result = [exp.property.name];
-  var _exp = exp;
-
-  while (_exp.object.type === 'MemberExpression') {
-    _exp = _exp.object;
-    result.unshift(_exp.property.name);
-  }
-
-  result.unshift(_exp.object.name);
-  return result;
-}
-function formatMemberExpression(list) {
-  var last = list.pop();
-  var exp = main_3.identifier(last);
-
-  for (var i = list.length - 1; i >= 0; i--) {
-    var name = list[i];
-    exp = main_3.memberExpression(main_3.identifier(name), exp, false);
-  }
-
-  return exp;
-}
-
-function handleModule(interfaceName, moduleObject) {
-  // 使用state生成interface
-  var interfacePropertyList = [];
-  var stateList = moduleObject.properties.filter(function (property) {
-    return property.type === 'Property' && property.value.type === 'ObjectExpression' && property.key.type === 'Identifier' && property.key.name === 'state';
-  });
-
-  if (stateList.length == 1) {
-    var state = stateList[0];
-    var properties = state.value.properties;
-    interfacePropertyList = properties.map(function (item) {
-      var signature = tsPropertySignature(item.key.name, 'any');
-      signature.comments = item.comments;
-      return signature;
-    });
-  }
-
-  var identifierM = main_3.identifier('m');
-  identifierM.typeAnnotation = main_3.tsTypeAnnotation(main_3.tsTypeReference(main_3.identifier("Module<".concat(interfaceName, ", RootState>"))));
-  var moduleDeclarationNode = main_3.variableDeclaration('const', [main_3.variableDeclarator(identifierM, moduleObject)]); // ModuleState
-
-  var exportStateNode = main_3.exportNamedDeclaration(main_3.tsInterfaceDeclaration(main_3.identifier(interfaceName), main_3.tsInterfaceBody(interfacePropertyList)), [], null);
-  return [exportStateNode, moduleDeclarationNode];
-}
-/**
- * 对于store文件进行处理
- */
-
-
-function handleJsStore (input, output) {
-  console.info(input, output);
-  var extname = path$1.extname(input);
-
-  if (extname !== '.js') {
-    console.warn(input + ' isnt a js file');
-    return;
-  }
-
-  var fileName = path$1.basename(input, extname);
-  var originalCode = fs.readFileSync(input, 'utf-8');
-  var originalAst = main_2$1(originalCode, {
-    parser: {
-      parse: function parse(source, options) {
-        return lib_1(source, Object.assign(options, {
-          plugins: ['estree', 'decorators-legacy'],
-          tokens: true
-        }));
-      }
-    }
-  });
-  var interfaceName = camelCaseWithFirstLetter(fileName) + 'State';
-  var importDeclarations = [];
-  var body = originalAst.program.body;
-  var exportDefaultDeclaration = null;
-  var moduleObject = null;
-  var other = [];
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
-
-  try {
-    for (var _iterator = body[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var node = _step.value;
-
-      if (node.type === 'ImportDeclaration') {
-        importDeclarations.push(node);
-      } else if (node.type === 'ExportDefaultDeclaration') {
-        exportDefaultDeclaration = node;
-      } else {
-        other.push(node);
-      }
-    }
-  } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
-  } finally {
-    try {
-      if (!_iteratorNormalCompletion && _iterator["return"] != null) {
-        _iterator["return"]();
-      }
-    } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
-      }
-    }
-  }
-
-  if (!exportDefaultDeclaration) {
-    console.warn('cannot find export default declaration');
-    return;
-  }
-
-  var declaration = exportDefaultDeclaration.declaration;
-
-  if (declaration.type === 'ObjectExpression') {
-    var _generatedAst$program, _generatedAst$program2, _generatedAst$program3;
-
-    moduleObject = declaration;
-    var nodes = handleModule(interfaceName, moduleObject);
-    var generatedAst = main_2$1('');
-
-    (_generatedAst$program = generatedAst.program.body).push.apply(_generatedAst$program, importDeclarations.concat([importModuleFromVuex, importRootStateFromStoreDTS]));
-
-    (_generatedAst$program2 = generatedAst.program.body).push.apply(_generatedAst$program2, other);
-
-    (_generatedAst$program3 = generatedAst.program.body).push.apply(_generatedAst$program3, toConsumableArray(nodes));
-
-    generatedAst.program.body.push(exportDefaultM);
-    var code = main_4$1(generatedAst, {
-      tabWidth: 4,
-      quote: 'single',
-      trailingComma: true
-    }).code;
-    fs.writeFileSync(output, code + '\n');
-  } else {
-    var _generatedAst$program4, _generatedAst$program5;
-
-    var interfacePropertyList = [];
-    interfacePropertyList = importDeclarations.map(function (declaration) {
-      var source = declaration.source.value;
-      var name = path$1.basename(source);
-      var signature = tsPropertySignature(name, 'any');
-      return signature;
-    }); // ModuleState
-
-    var exportStateNode = main_3.exportNamedDeclaration(main_3.tsInterfaceDeclaration(main_3.identifier(interfaceName), main_3.tsInterfaceBody(interfacePropertyList)), [], null); // 需要添加一个state
-
-    var _generatedAst = main_2$1('');
-
-    (_generatedAst$program4 = _generatedAst.program.body).push.apply(_generatedAst$program4, importDeclarations);
-
-    _generatedAst.program.body.push(exportStateNode);
-
-    (_generatedAst$program5 = _generatedAst.program.body).push.apply(_generatedAst$program5, other);
-
-    _generatedAst.program.body.push(exportDefaultDeclaration); // generatedAst.program.body.push(b.line());
-
-
-    var _code = main_4$1(_generatedAst, {
-      tabWidth: 4,
-      quote: 'single',
-      trailingComma: true
-    }).code;
-    fs.writeFileSync(output, _code + '\n');
-  }
-}
-
 var runtime_1 = createCommonjsModule(function (module) {
 /**
  * Copyright (c) 2014-present, Facebook, Inc.
@@ -36156,6 +35980,299 @@ function _asyncToGenerator(fn) {
 }
 
 var asyncToGenerator = _asyncToGenerator;
+
+function writeFileSync(filePath, content) {
+  var dirPath = path$1.dirname(filePath);
+
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, {
+      recursive: true
+    });
+  }
+
+  fs.writeFileSync(filePath, content);
+}
+/**
+ * 
+ * @param input 应该是文件夹
+ * @param output 
+ * @param callback 
+ */
+
+function recrusive(_x, _x2, _x3) {
+  return _recrusive.apply(this, arguments);
+}
+
+function _recrusive() {
+  _recrusive = asyncToGenerator(
+  /*#__PURE__*/
+  regenerator.mark(function _callee(input, output, callback) {
+    var queue, _loop, _ret;
+
+    return regenerator.wrap(function _callee$(_context2) {
+      while (1) {
+        switch (_context2.prev = _context2.next) {
+          case 0:
+            queue = [input]; // 深度优先搜索
+
+            _loop =
+            /*#__PURE__*/
+            regenerator.mark(function _loop() {
+              var filePath, stats, isDirectory, children, outputPath;
+              return regenerator.wrap(function _loop$(_context) {
+                while (1) {
+                  switch (_context.prev = _context.next) {
+                    case 0:
+                      filePath = queue.shift();
+
+                      if (filePath) {
+                        _context.next = 3;
+                        break;
+                      }
+
+                      return _context.abrupt("return", "continue");
+
+                    case 3:
+                      stats = fs.statSync(filePath);
+                      isDirectory = stats.isDirectory();
+
+                      if (!isDirectory) {
+                        _context.next = 10;
+                        break;
+                      }
+
+                      // 如果是文件夹，加入queue
+                      children = fs.readdirSync(filePath);
+                      queue.unshift.apply(queue, toConsumableArray(children.map(function (child) {
+                        return path$1.join(filePath, child);
+                      })));
+                      _context.next = 14;
+                      break;
+
+                    case 10:
+                      outputPath = output + filePath.substr(input.length);
+                      fs.mkdirSync(path$1.dirname(outputPath), {
+                        recursive: true,
+                        mode: 493
+                      });
+                      _context.next = 14;
+                      return callback(filePath, outputPath);
+
+                    case 14:
+                    case "end":
+                      return _context.stop();
+                  }
+                }
+              }, _loop);
+            });
+
+          case 2:
+            if (!(queue.length > 0)) {
+              _context2.next = 9;
+              break;
+            }
+
+            return _context2.delegateYield(_loop(), "t0", 4);
+
+          case 4:
+            _ret = _context2.t0;
+
+            if (!(_ret === "continue")) {
+              _context2.next = 7;
+              break;
+            }
+
+            return _context2.abrupt("continue", 2);
+
+          case 7:
+            _context2.next = 2;
+            break;
+
+          case 9:
+          case "end":
+            return _context2.stop();
+        }
+      }
+    }, _callee);
+  }));
+  return _recrusive.apply(this, arguments);
+}
+
+function parseMemberExpression(exp) {
+  if (exp.type !== 'MemberExpression') {
+    console.error(exp, ' is not a MemberExpression');
+    return [];
+  }
+
+  var result = [exp.property.name];
+  var _exp = exp;
+
+  while (_exp.object.type === 'MemberExpression') {
+    _exp = _exp.object;
+    result.unshift(_exp.property.name);
+  }
+
+  result.unshift(_exp.object.name);
+  return result;
+}
+function formatMemberExpression(list) {
+  var last = list.pop();
+  var exp = main_3.identifier(last);
+
+  for (var i = list.length - 1; i >= 0; i--) {
+    var name = list[i];
+    exp = main_3.memberExpression(main_3.identifier(name), exp, false);
+  }
+
+  return exp;
+}
+
+function handleModule(interfaceName, moduleObject) {
+  // 使用state生成interface
+  var interfacePropertyList = [];
+  var stateList = moduleObject.properties.filter(function (property) {
+    return property.type === 'Property' && property.value.type === 'ObjectExpression' && property.key.type === 'Identifier' && property.key.name === 'state';
+  });
+
+  if (stateList.length == 1) {
+    var state = stateList[0];
+    var properties = state.value.properties;
+    interfacePropertyList = properties.map(function (item) {
+      var signature = tsPropertySignature(item.key.name, 'any');
+      signature.comments = item.comments;
+      return signature;
+    });
+  }
+
+  var identifierM = main_3.identifier('m');
+  identifierM.typeAnnotation = main_3.tsTypeAnnotation(main_3.tsTypeReference(main_3.identifier("Module<".concat(interfaceName, ", RootState>"))));
+  var moduleDeclarationNode = main_3.variableDeclaration('const', [main_3.variableDeclarator(identifierM, moduleObject)]); // ModuleState
+
+  var exportStateNode = main_3.exportNamedDeclaration(main_3.tsInterfaceDeclaration(main_3.identifier(interfaceName), main_3.tsInterfaceBody(interfacePropertyList)), [], null);
+  return [exportStateNode, moduleDeclarationNode];
+}
+/**
+ * 对于store文件进行处理
+ */
+
+
+function handleJsStore (input, output) {
+  console.info(input, output);
+  var extname = path$1.extname(input);
+
+  if (extname !== '.js') {
+    console.warn(input + ' isnt a js file');
+    return;
+  }
+
+  var fileName = path$1.basename(input, extname);
+  var originalCode = fs.readFileSync(input, 'utf-8');
+  var originalAst = main_2$1(originalCode, {
+    parser: {
+      parse: function parse(source, options) {
+        return lib_1(source, Object.assign(options, {
+          plugins: ['estree', 'decorators-legacy'],
+          tokens: true
+        }));
+      }
+    }
+  });
+  var interfaceName = camelCaseWithFirstLetter(fileName) + 'State';
+  var importDeclarations = [];
+  var body = originalAst.program.body;
+  var exportDefaultDeclaration = null;
+  var moduleObject = null;
+  var other = [];
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = body[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var node = _step.value;
+
+      if (node.type === 'ImportDeclaration') {
+        importDeclarations.push(node);
+      } else if (node.type === 'ExportDefaultDeclaration') {
+        exportDefaultDeclaration = node;
+      } else {
+        other.push(node);
+      }
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+        _iterator["return"]();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  if (!exportDefaultDeclaration) {
+    console.warn('cannot find export default declaration');
+    return;
+  }
+
+  var declaration = exportDefaultDeclaration.declaration;
+
+  if (declaration.type === 'ObjectExpression') {
+    var _generatedAst$program, _generatedAst$program2, _generatedAst$program3;
+
+    moduleObject = declaration;
+    var nodes = handleModule(interfaceName, moduleObject);
+    var generatedAst = main_2$1('');
+
+    (_generatedAst$program = generatedAst.program.body).push.apply(_generatedAst$program, importDeclarations.concat([importModuleFromVuex, importRootStateFromStoreDTS]));
+
+    (_generatedAst$program2 = generatedAst.program.body).push.apply(_generatedAst$program2, other);
+
+    (_generatedAst$program3 = generatedAst.program.body).push.apply(_generatedAst$program3, toConsumableArray(nodes));
+
+    generatedAst.program.body.push(exportDefaultM);
+    var code = main_4$1(generatedAst, {
+      tabWidth: 4,
+      quote: 'single',
+      trailingComma: true
+    }).code;
+    fs.writeFileSync(output, code + '\n');
+  } else {
+    var _generatedAst$program4, _generatedAst$program5;
+
+    var interfacePropertyList = [];
+    interfacePropertyList = importDeclarations.map(function (declaration) {
+      var source = declaration.source.value;
+      var name = path$1.basename(source);
+      var signature = tsPropertySignature(name, 'any');
+      return signature;
+    }); // ModuleState
+
+    var exportStateNode = main_3.exportNamedDeclaration(main_3.tsInterfaceDeclaration(main_3.identifier(interfaceName), main_3.tsInterfaceBody(interfacePropertyList)), [], null); // 需要添加一个state
+
+    var _generatedAst = main_2$1('');
+
+    (_generatedAst$program4 = _generatedAst.program.body).push.apply(_generatedAst$program4, importDeclarations);
+
+    _generatedAst.program.body.push(exportStateNode);
+
+    (_generatedAst$program5 = _generatedAst.program.body).push.apply(_generatedAst$program5, other);
+
+    _generatedAst.program.body.push(exportDefaultDeclaration); // generatedAst.program.body.push(b.line());
+
+
+    var _code = main_4$1(_generatedAst, {
+      tabWidth: 4,
+      quote: 'single',
+      trailingComma: true
+    }).code;
+    fs.writeFileSync(output, _code + '\n');
+  }
+}
 
 var hasFlag = (flag, argv) => {
 	argv = argv || process.argv;
@@ -48784,45 +48901,56 @@ function handleWatch(list) {
  */
 
 
-function handleJsVue (_x, _x2) {
-  return _ref.apply(this, arguments);
+function handleJsVue(_x, _x2) {
+  return _handleJsVue.apply(this, arguments);
 }
 
-function _ref() {
-  _ref = asyncToGenerator(
+function _handleJsVue() {
+  _handleJsVue = asyncToGenerator(
   /*#__PURE__*/
   regenerator.mark(function _callee(input, output) {
     var _generatedAst$program;
 
-    var extname, originalCode, scriptContent, originalAst, generatedAst, originalExportDefault, importDeclarations, extract, name, componentList, props, dataFunc, computed, watchList, methods, filters, directives, mixins, lifecycleNodes, body, other, className, propNodes, dataNodes, computedNodes, methodNodes, watchNodes, vueNode, exportDefault, generatedCode, startPos, endPos, lessCode, lessResult, code;
+    var stat, extname, originalCode, scriptContent, originalAst, generatedAst, originalExportDefault, importDeclarations, extract, name, componentList, props, dataFunc, computed, watchList, methods, filters, directives, mixins, lifecycleNodes, body, other, className, propNodes, dataNodes, computedNodes, methodNodes, watchNodes, vueNode, exportDefault, generatedCode, startPos, endPos, lessCode, lessResult, code;
     return regenerator.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
             console.info(input, output);
+            stat = fs.statSync(input);
+
+            if (!stat.isDirectory()) {
+              _context.next = 5;
+              break;
+            }
+
+            recrusive(input, output, handleJsVue);
+            return _context.abrupt("return");
+
+          case 5:
             extname = path$1.extname(input);
 
             if (!(extname !== '.vue')) {
-              _context.next = 5;
+              _context.next = 9;
               break;
             }
 
             console.warn(input + ' isnt a vue file');
             return _context.abrupt("return");
 
-          case 5:
+          case 9:
             originalCode = fs.readFileSync(input, 'utf-8');
             scriptContent = getScriptContent(originalCode);
 
             if (scriptContent) {
-              _context.next = 10;
+              _context.next = 14;
               break;
             }
 
             console.warn(input + ' script is lost');
             return _context.abrupt("return");
 
-          case 10:
+          case 14:
             originalAst = main_2$1(scriptContent.jsScript, {
               parser: {
                 parse: function parse(source, options) {
@@ -48886,14 +49014,14 @@ function _ref() {
             console.info('handle import done!');
 
             if (name) {
-              _context.next = 35;
+              _context.next = 39;
               break;
             }
 
             console.warn('lost name');
             return _context.abrupt("return");
 
-          case 35:
+          case 39:
             /** 类名，大写开头 */
             className = name.value.value; // 如果存在props，处理props
 
@@ -48972,31 +49100,31 @@ function _ref() {
             startPos = scriptContent.footer.indexOf('<style lang="less">');
 
             if (!(startPos >= 0)) {
-              _context.next = 79;
+              _context.next = 83;
               break;
             }
 
             endPos = scriptContent.footer.indexOf('</style>');
             lessCode = scriptContent.footer.substring(startPos + 19, endPos);
-            _context.next = 77;
+            _context.next = 81;
             return handleCode(lessCode);
 
-          case 77:
+          case 81:
             lessResult = _context.sent;
             scriptContent.footer = scriptContent.footer.substr(0, startPos + 19) + lessResult.css + scriptContent.footer.substr(endPos);
 
-          case 79:
+          case 83:
             code = scriptContent.header + '\n<script lang="ts">\n' + generatedCode + '\n</script>\n' + scriptContent.footer;
-            fs.writeFileSync(output, code);
+            writeFileSync(output, code);
 
-          case 81:
+          case 85:
           case "end":
             return _context.stop();
         }
       }
     }, _callee);
   }));
-  return _ref.apply(this, arguments);
+  return _handleJsVue.apply(this, arguments);
 }
 
 /**

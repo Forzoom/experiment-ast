@@ -13,6 +13,8 @@ import {
     getScriptContent,
     routerLifecycleNames,
     lifecycleNames,
+    writeFileSync,
+    recrusive,
 } from '@/utils';
 import {
     DataNode, ComputedNode, PropNode, MethodNode, WatchNode, VueNode, LifecycleNode,
@@ -113,8 +115,14 @@ function handleWatch(list: namedTypes.Property[]) {
 /**
  * 对于vue文件进行处理
  */
-export default async function(input: string, output: string) {
+export default async function handleJsVue(input: string, output: string) {
     console.info(input, output);
+    const stat = fs.statSync(input);
+    if (stat.isDirectory()) {
+        recrusive(input, output, handleJsVue);
+        return;
+    }
+
     const extname = path.extname(input);
     if (extname !== '.vue') {
         console.warn(input + ' isnt a vue file');
@@ -275,5 +283,5 @@ export default async function(input: string, output: string) {
 
     const code = scriptContent.header + '\n<script lang="ts">\n' + generatedCode + '\n</script>\n' + scriptContent.footer;
     
-    fs.writeFileSync(output, code);
+    writeFileSync(output, code);
 }

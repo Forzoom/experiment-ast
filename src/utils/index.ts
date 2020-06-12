@@ -5,6 +5,7 @@ export * from './extract';
 export * from './import';
 export * from './string';
 export * from './vue';
+export * from './fs';
 
 // 解析
 export function parseMemberExpression(exp: namedTypes.MemberExpression) {
