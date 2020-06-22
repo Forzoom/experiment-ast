@@ -1,0 +1,82 @@
+#! /usr/bin/env node
+const process = require('process');
+const shuttle = require('../dist/experiment-ast.cjs.js');
+const argv = require('minimist')(process.argv.slice(2), {
+    boolean: true,
+});
+const fs = require('fs');
+const path = require('path');
+
+const helpText = `
+--help 帮助内容
+ -f
+--file 配置文件路径
+ -s
+--src  源文件路径
+ -d
+--dist 写入文件路径
+ -p
+--parser 解析器 'jsVue' | 'tsClassVue'
+ -g
+--generator 生成器 'jsVue' | 'tsClassVue'
+`;
+
+if (argv.help) {
+    console.log();
+    return;
+}
+
+const cfg = argv.f || argv.file;
+const src = argv.s || argv.src;
+const dist = argv.d || argv.dist;
+const parser = argv.p || argv.parser;
+const generator = argv.g || argv.generator;
+
+function handle(parserName, generatorName, src, dist) {
+    let parser = null;
+    switch (parserName) {
+    case 'jsVue': parser = new shuttle.JSVueParser(); break;
+    case 'tsClassVue': parser = new shuttle.TSClassVueParser(); break;
+    }
+
+    let generator = null;
+    switch (generatorName) {
+    case 'jsVue': generator = new shuttle.JSVueGenerator(); break;
+    case 'tsClassVue': generator = new shuttle.TSClassVueGenerator(); break;
+    }
+
+    const parseResult = parser.handle(src);
+    generator(parseResult, dist);
+}
+
+/**
+ * 
+ * @param cfg 配置路径
+ */
+function handleCfg(cfg) {
+    const configOptions = JSON.parse(fs.readFileSync(cfg).toString('utf-8'));
+    if (!Array.isArray(configOptions)) {
+        configOptions = [ configOptions ];
+    }
+
+    for (const opt of configOptions) {
+        const {
+            cmd,
+            src,
+            dist,
+        } = opt;
+
+        addParamsTypeAnnotation(vueNode);
+        addImportStore(vueNode);
+
+        handleCmd(cmd, src, dist);
+    }
+}
+
+if (cfg) {
+    handleCfg(cfg);
+} else if (parser && generator && src && dist) {
+    handle(cmd, src, dist);
+} else if (fs.existsSync(path.join(__dirname, 'shuttle.config.js'))) {
+    handleCfg(path.join(__dirname, 'shuttle.config.js'));
+}

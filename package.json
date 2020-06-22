@@ -17,6 +17,7 @@
     "@rollup/plugin-babel": "^5.0.0",
     "@types/node": "^13.1.8",
     "@typescript-eslint/typescript-estree": "^2.12.1-alpha.26",
+    "minimist": "^1.2.5",
     "postcss": "^7.0.27",
     "postcss-less": "^3.1.4",
     "recast": "^0.18.5",
@@ -28,9 +29,10 @@
     "typescript": "^3.7.4"
   },
   "bin": {
-    "util-ast": "./bin/util-ast"
+    "shuttle": "./bin/shuttle"
   },
   "scripts": {
-    "build": "node build/build.js"
+    "build": "node build/build.js",
+    "test": "node ./bin/util-ast handleJsVue /Volumes/Repo2/repo/vue/tourye_web/src/pages/mine/mine.vue ~/Downloads/mine.vue"
   }
 }

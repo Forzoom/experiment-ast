@@ -44,7 +44,7 @@ module.exports = exports = [
                 extensions,
                 preferBuiltins: true,
             }),
-            builtins(),
+            // builtins(),
             alias({
                 entries: [
                     { find: '@', replacement: path.join(__dirname, '../src') }

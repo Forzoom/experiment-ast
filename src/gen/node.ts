@@ -12,6 +12,14 @@ import {
     importFromVuePropertyDecorator,
 } from '@/utils';
 
+interface Block {
+    type: 'template' | 'style';
+    content: string;
+    attr?: {
+        [key: string]: string;
+    };
+}
+
 export class VueNode {
     originalAst: any;
     name: string;
@@ -27,6 +35,9 @@ export class VueNode {
     methods?: MethodNode[] | null;
     lifecycles?: LifecycleNode[] | null;
     comments?: K.CommentKind[] | null;
+
+    template?: Block | Block[];
+    style?: Block | Block[];
 
     constructor(name: string) {
         this.name = name;
@@ -69,76 +80,6 @@ export class VueNode {
         const obj = b.objectExpression(properties);
         const exportDefault = b.exportDefaultDeclaration(obj);
         exportDefault.comments = this.comments;
-        return exportDefault;
-    }
-
-    public toTsClass() {
-        // 定义class
-        const clazz = b.classDeclaration(
-            b.identifier(camelCaseWithFirstLetter(this.name)),
-            b.classBody([
-                ...(this.props || []).map(node => node.toTsClass()),
-                ...(this.data || []).map(node => node.toTsClass()),
-                ...(this.computed || []).map(node => node.toTsClass()),
-                ...(this.watch || []).map(node => node.toTsClass()),
-                ...(this.methods || []).map(node => node.toTsClass()),
-                ...(this.lifecycles || []).map(node => node.toTsClass()),
-            ]),
-            b.identifier('Vue')
-        );
-        clazz.decorators = [
-            b.decorator(
-                b.callExpression(
-                    b.identifier('Component'),
-                    [
-                        b.objectExpression([
-                            b.property('init', b.identifier('name'), b.literal(this.name)),
-                            this.components!,
-                            this.filters!,
-                            this.directives!,
-                            this.mixins!,
-                        ].filter(_ => _)),
-                    ],
-                )
-            )
-        ];
-        const exportDefault = b.exportDefaultDeclaration(clazz);
-        exportDefault.comments = this.comments;
-
-        const importMap: {
-            [source: string]: namedTypes.ImportDeclaration,
-        } = {};
-        if (this.imports) {
-            let index = -1;
-            for (let i = 0, len = this.imports.length; i < len; i++) {
-                const importDeclaration = this.imports[i];
-                const source = importDeclaration.source;
-                if (source.type === 'Literal' && typeof source.value == 'string') {
-                    importMap[source.value] = importDeclaration;
-                    if (source.value == 'vue') {
-                        index = i;
-                    }
-                }
-            }
-            if (index >= 0) {
-                this.imports.splice(index, 1);
-            }
-        }
-
-        // 处理vue-property-decorator
-        const importFromVPD = importFromVuePropertyDecorator([
-            this.props && this.props.length > 0 ? 'Prop' : null,
-            this.watch && this.watch.length > 0 ? 'Watch' : null,
-        ]);
-
-        if (this.imports) {
-            this.imports.push(importFromVPD);
-        } else {
-            this.imports = [
-                importFromVPD,
-            ];
-        }
-
         return exportDefault;
     }
 }

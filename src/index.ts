@@ -1,8 +1,12 @@
 import './polyfill/polyfill';
-import handleJsStore from './js/store';
-import handleJsVue from './js/vue';
-import handleTsClassVue from './ts_class/vue';
-import handleJsRouter from './js/router';
+import handleJsStore from './parser/jsStore';
+export * as JSVueParser from './parser/jsVue';
+export * as TsClassVueParser from './parser/tsClassVue';
+
+export * as JSVueGenerator from './gen/jsVue';
+export * as TSClassVueGenerator from './gen/tsClassVue';
+
+import handleJsRouter from './parser/jsRouter';
 import {
     handleCode as handleLessCode,
     handleLessFile as handleLessFile,
@@ -12,8 +16,6 @@ import {
 export default {
     handleJsRouter,
     handleJsStore,
-    handleJsVue,
-    handleTsClassVue,
     handleLessCode,
     handleLessFile,
     handleVueFileLess,
