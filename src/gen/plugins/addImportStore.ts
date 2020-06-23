@@ -1,8 +1,8 @@
-import { namedTypes, builders as b } from 'ast-types';
+import { builders as b } from 'ast-types';
 import { VueNode } from '@/node';
 import { GeneratorPlugin } from 'types';
 
-const plugin: GeneratorPlugin = (node: VueNode) => {
+export const plugin: GeneratorPlugin = (node: VueNode) => {
     let hasStore = false;
     if (node.computed) {
         for (const computed of node.computed) {
@@ -37,5 +37,3 @@ const plugin: GeneratorPlugin = (node: VueNode) => {
         }
     }
 }
-
-export default plugin;

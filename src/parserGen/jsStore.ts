@@ -54,7 +54,7 @@ function handleModule(interfaceName: string, moduleObject: namedTypes.ObjectExpr
 /**
  * 对于store文件进行处理
  */
-export default class JSStoreParser {
+export default class JSStoreParserGenerator {
     public handle(input: string, output: string) {
         console.info(input, output);
         const extname = path.extname(input);

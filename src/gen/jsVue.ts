@@ -42,23 +42,22 @@ export default class JSClassVueGenerator implements Generator {
         properties.push(b.property('init', b.identifier('props'), b.objectExpression((vueNode.props || []).map(node => this.prop(node)))));
         properties.push(b.property('init', b.identifier('data'), dataFn));
         properties.push(b.property('init', b.identifier('computed'), b.objectExpression((vueNode.computed || []).map(node => this.computed(node)))));
-        properties.push(b.property('init', b.identifier('watch'), b.objectExpression((vueNode.watch || []).map(node => node.toJs()))));
-        properties.push(b.property('init', b.identifier('methods'), b.objectExpression((vueNode.methods || []).map(node => node.toJs()))));
-        properties.push(...(this.lifecycles || []).map(node => {
+        properties.push(b.property('init', b.identifier('watch'), b.objectExpression((vueNode.watch || []).map(node => this.watch(node)))));
+        properties.push(b.property('init', b.identifier('methods'), b.objectExpression((vueNode.methods || []).map(node => this.method(node)))));
+        properties.push(...(vueNode.lifecycles || []).map(node => {
             const property = b.property('init', b.identifier(node.key), node.value);
             property.comments = node.comments;
             return property;
         }));
         const obj = b.objectExpression(properties);
         const exportDefault = b.exportDefaultDeclaration(obj);
-        exportDefault.comments = this.comments;
-        return exportDefault;
+        exportDefault.comments = vueNode.comments;
 
         const generatedAst = recast.parse('', {
             tabWidth: 4,
         });
         generatedAst.program.body.push(...vueNode.imports, ...vueNode.other);
-        generatedAst.program.body.push(vueNode.toJs());
+        generatedAst.program.body.push(exportDefault);
         const generatedCode = recast.print(generatedAst, {
             tabWidth: 4,
             quote: 'single',

@@ -63,12 +63,14 @@ const generator = argv.g || argv.generator;
  * @param dist 
  */
 function handle(parserName, generatorName, src, dist) {
+    // 生成parser
     let parser = null;
     switch (parserName) {
     case 'jsVue': parser = new shuttle.JSVueParser(); break;
     case 'tsClassVue': parser = new shuttle.TSClassVueParser(); break;
     }
 
+    // 生成generator
     let generator = null;
     switch (generatorName) {
     case 'jsVue': generator = new shuttle.JSVueGenerator(); break;

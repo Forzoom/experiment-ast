@@ -33,7 +33,7 @@ function handleParam(params: K.PatternKind[]) {
     return hasRoute;
 }
 
-const plugin = (node: VueNode) => {
+export const plugin = (node: VueNode) => {
     let hasRoute = false;
 
     recast.visit(node.originalAst, {
@@ -110,5 +110,3 @@ const plugin = (node: VueNode) => {
         }
     }
 }
-
-export default plugin;
