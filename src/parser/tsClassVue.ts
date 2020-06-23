@@ -8,8 +8,9 @@ import * as parser from '@babel/parser';
 import {
     getScriptContent,
     topLevelNames,
+    parseBlock,
 } from '@/utils';
-import { VueNode, DataNode, PropNode, ComputedNode, WatchNode, MethodNode, LifecycleNode } from '@/gen/node';
+import { VueNode, DataNode, PropNode, ComputedNode, WatchNode, MethodNode, LifecycleNode } from '@/node';
 
 /**
  * 对于vue文件进行处理
@@ -23,22 +24,15 @@ export default class TSClassVueParser {
             return;
         }
         const originalCode = fs.readFileSync(input, 'utf-8');
-        let scriptContent: { header: string, footer: string, jsScript: string } | null = null;
-        if (extname === '.vue') {
-            scriptContent = getScriptContent(originalCode);
-        } else {
-            scriptContent = {
-                header: '',
-                footer: '',
-                jsScript: originalCode,
-            };
-        }
-        if (!scriptContent) {
+        // 解析block
+        const blocks = parseBlock(originalCode);
+        const scriptBlocks = blocks.filter(block => block.type === 'script');
+        if (scriptBlocks.length <= 0) {
             console.warn(input + ' script is lost');
             return;
         }
 
-        const originalAst = recast.parse(scriptContent.jsScript, {
+        const originalAst = recast.parse(scriptBlocks[0].content, {
             parser: {
                 parse(source: string, options: any) {
                     return parser.parse(source, Object.assign(options, {

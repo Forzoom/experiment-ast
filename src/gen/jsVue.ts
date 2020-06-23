@@ -5,8 +5,8 @@ import {
     namedTypes,
     builders as b,
 } from 'ast-types';
-import { Generator, GeneratorPlugin } from 'types/index';
-import { extWith } from '@/utils';
+import { Generator, GeneratorPlugin, Block } from 'types/index';
+import { extWith, formatBlock } from '@/utils';
 
 export default class JSClassVueGenerator implements Generator {
     public plugins: GeneratorPlugin[] = [];
@@ -16,18 +16,64 @@ export default class JSClassVueGenerator implements Generator {
     }
 
     public handle(vueNode: VueNode, output: string) {
+        const dataFn = b.functionExpression(
+            b.identifier('data'),
+            [],
+            b.blockStatement([
+                b.returnStatement(
+                    b.objectExpression((vueNode.data || []).map(node => this.data(node)))
+                ),
+            ])
+        );
+        const properties: namedTypes.Property[] = [];
+        properties.push(b.property('init', b.identifier('name'), b.stringLiteral(vueNode.name)));
+        if (vueNode.components) {
+            properties.push(vueNode.components);
+        }
+        if (vueNode.filters) {
+            properties.push(vueNode.filters);
+        }
+        if (vueNode.directives) {
+            properties.push(vueNode.directives);
+        }
+        if (vueNode.mixins) {
+            properties.push(vueNode.mixins);
+        }
+        properties.push(b.property('init', b.identifier('props'), b.objectExpression((vueNode.props || []).map(node => this.prop(node)))));
+        properties.push(b.property('init', b.identifier('data'), dataFn));
+        properties.push(b.property('init', b.identifier('computed'), b.objectExpression((vueNode.computed || []).map(node => this.computed(node)))));
+        properties.push(b.property('init', b.identifier('watch'), b.objectExpression((vueNode.watch || []).map(node => node.toJs()))));
+        properties.push(b.property('init', b.identifier('methods'), b.objectExpression((vueNode.methods || []).map(node => node.toJs()))));
+        properties.push(...(this.lifecycles || []).map(node => {
+            const property = b.property('init', b.identifier(node.key), node.value);
+            property.comments = node.comments;
+            return property;
+        }));
+        const obj = b.objectExpression(properties);
+        const exportDefault = b.exportDefaultDeclaration(obj);
+        exportDefault.comments = this.comments;
+        return exportDefault;
+
         const generatedAst = recast.parse('', {
             tabWidth: 4,
         });
         generatedAst.program.body.push(...vueNode.imports, ...vueNode.other);
         generatedAst.program.body.push(vueNode.toJs());
-        let code: string = '';
-        if (extWith('.vue', vueNode.filePath) || (vueNode.template?.length && vueNode.style?.length)) {
-            code = scriptContent.header + '\n<script>\n' + recast.print(generatedAst, { tabWidth: 4 }).code + '\n</script>\n' + scriptContent.footer;
-        } else {
-            code = recast.print(generatedAst, { tabWidth: 4 }).code;
-        }
+        const generatedCode = recast.print(generatedAst, {
+            tabWidth: 4,
+            quote: 'single',
+            trailingComma: true,
+        }).code;
         
+        const scriptBlock: Block = {
+            type: 'script',
+            content: generatedCode,
+            attr: {
+                lang: 'js',
+            },
+        };
+        const code = formatBlock([ ...vueNode.template, scriptBlock, ...vueNode.style ]);
+
         fs.writeFileSync(output, code);
     }
 

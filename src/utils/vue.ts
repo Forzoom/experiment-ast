@@ -67,6 +67,10 @@ export function parseBlock(code: string) {
     return result;
 }
 
+/**
+ * 根据代码block生成代码
+ * @param blocks 所有的代码block
+ */
 export function formatBlock(blocks: Block[]) {
     return blocks.map(block => `<${block.type} ${formatAttr(block.attr)}>\n${block.content}\n</${block.type}>\n`).join('');
 }
