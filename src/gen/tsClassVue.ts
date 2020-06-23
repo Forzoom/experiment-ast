@@ -1,27 +1,36 @@
 import * as recast from 'recast';
-import { VueNode } from './node';
+import { VueNode, DataNode, PropNode, WatchNode, MethodNode, LifecycleNode, ComputedNode } from '@/node';
 import { builders as b, namedTypes } from 'ast-types';
-import { Generator } from '../../types/index';
+import { Generator, GeneratorPlugin, Block } from 'types/index';
 import {
+    any,
     writeFileSync,
+    parseMemberExpression,
     camelCaseWithFirstLetter,
     importFromVuePropertyDecorator,
+    camelCaseWithDollar,
+    formatMemberExpression,
+    formatBlock,
 } from '@/utils';
 
-class TSClassVueGenerator implements Generator {
-    public plugins: any;
+export default class TSClassVueGenerator implements Generator {
+    public plugins: GeneratorPlugin[] = [];
+
+    public constructor(plugins?: GeneratorPlugin[]) {
+        this.plugins = plugins || [];
+    }
 
     public async handle(vueNode: VueNode, output: string) {
         // 定义class
         const clazz = b.classDeclaration(
             b.identifier(camelCaseWithFirstLetter(vueNode.name)),
             b.classBody([
-                ...(vueNode.props || []).map(node => node.toTsClass()),
-                ...(vueNode.data || []).map(node => node.toTsClass()),
-                ...(vueNode.computed || []).map(node => node.toTsClass()),
-                ...(vueNode.watch || []).map(node => node.toTsClass()),
-                ...(vueNode.methods || []).map(node => node.toTsClass()),
-                ...(vueNode.lifecycles || []).map(node => node.toTsClass()),
+                ...(vueNode.props || []).map(node => this.prop(node)),
+                ...(vueNode.data || []).map(node => this.data(node)),
+                ...(vueNode.computed || []).map(node => this.computed(node)),
+                ...(vueNode.watch || []).map(node => this.watch(node)),
+                ...(vueNode.methods || []).map(node => this.method(node)),
+                ...(vueNode.lifecycles || []).map(node => this.lifecycle(node)),
             ]),
             b.identifier('Vue')
         );
@@ -81,7 +90,7 @@ class TSClassVueGenerator implements Generator {
         const generatedAst = recast.parse('', {
             tabWidth: 4,
         });
-        generatedAst.program.body.push(...vueNode.imports, ...other);
+        generatedAst.program.body.push(...vueNode.imports, ...vueNode.other);
         generatedAst.program.body.push(exportDefault);
         const generatedCode = recast.print(generatedAst, {
             tabWidth: 4,
@@ -89,17 +98,102 @@ class TSClassVueGenerator implements Generator {
             trailingComma: true,
         }).code;
     
-        // 处理less
-        const startPos = scriptContent.footer.indexOf('<style lang="less">');
-        if (startPos >= 0) {
-            const endPos = scriptContent.footer.indexOf('</style>');
-            const lessCode = scriptContent.footer.substring(startPos + 19, endPos);
-            const lessResult = await handleLess(lessCode);
-            scriptContent.footer = scriptContent.footer.substr(0, startPos + 19) + lessResult.css + scriptContent.footer.substr(endPos);
-        }
-    
-        const code = scriptContent.header + '\n<script lang="ts">\n' + generatedCode + '\n</script>\n' + scriptContent.footer;
+        const scriptBlock: Block = {
+            type: 'script',
+            content: generatedCode,
+            attr: {
+                lang: 'ts',
+            },
+        };
+        const code = formatBlock([ ...vueNode.template, scriptBlock, ...vueNode.style ]);
         
         writeFileSync(output, code);
+    }
+
+    public data(node: DataNode) {
+        const definition = b.classProperty(b.identifier(node.key), node.init, any());
+        definition.access = 'public';
+        definition.comments = node.comments;
+        return definition;
+    }
+
+    public prop(node: PropNode) {
+        const definition = b.classProperty(b.identifier(node.key), null, any());
+        definition.access = 'public';
+        definition.decorators = [
+            b.decorator(b.callExpression(b.identifier('Prop'), [
+                node.value as namedTypes.ObjectExpression,
+            ]))
+        ];
+        definition.comments = node.comments;
+        return definition;
+    }
+
+    public computed(node: ComputedNode) {
+        if (node.store) {
+            let list: string[] = [];
+            let async: boolean | undefined = false;
+            const namespace = node.storeNamespace ? node.storeNamespace.split('/') : [];
+            if (node.value.type === 'FunctionExpression') {
+                const functionExpression = node.value;
+                list = parseMemberExpression((functionExpression.body.body[0] as namedTypes.ReturnStatement).argument as namedTypes.MemberExpression);
+                async = functionExpression.async;
+            } else if (node.value.type === 'ArrowFunctionExpression') {
+                const arrowFunctionExpression = node.value;
+                if (arrowFunctionExpression.body.type === 'MemberExpression') {
+                    list = parseMemberExpression(arrowFunctionExpression.body);
+                    async = arrowFunctionExpression.async;
+                }
+            }
+
+            const memberExpression = formatMemberExpression([ 'store', 'state' ].concat(namespace).concat(list.slice(1)));
+            const returnStatement = b.returnStatement(memberExpression);
+            const newFunctionExpression = b.functionExpression(b.identifier(node.key), [], b.blockStatement([returnStatement]));
+            newFunctionExpression.async = async;
+            const declaration = b.methodDefinition('get', b.identifier(node.key), newFunctionExpression);
+            declaration.accessibility = 'public';
+            declaration.comments = node.comments;
+            return declaration;
+        } else {
+            const declaration = b.methodDefinition('get', b.identifier(node.key), node.value);
+            declaration.accessibility = 'public';
+            declaration.comments = node.comments;
+            return declaration;
+        }
+    }
+
+    public watch(node: WatchNode) {
+        // todo: 需要修改函数的名字
+        const declaration = b.tsDeclareMethod(b.identifier('on' + camelCaseWithDollar(node.key) + 'Change'), node.value.params);
+        declaration.kind = 'method'; // 是一个正常函数
+        declaration.async = node.value.async; // 是否async
+        // @ts-ignore
+        declaration.value = node.value; // 函数体内容
+        declaration.accessibility = 'public';
+        declaration.decorators = [
+            b.decorator(b.callExpression(b.identifier('Watch'), [
+                b.literal(node.key),
+            ])),
+        ];
+        declaration.comments = node.comments;
+        return declaration;
+    }
+
+    public method(node: MethodNode) {
+        const functionExpression = b.functionExpression(b.identifier(node.key), node.value.params, node.value.body);
+        functionExpression.async = node.value.async;
+        const declaration = b.methodDefinition('method', b.identifier(node.key), functionExpression);
+        declaration.accessibility = 'public';
+        // console.log(method.comments, functionExpression.comments);
+        declaration.comments = node.comments;
+        return declaration;
+    }
+
+    public lifecycle(node: LifecycleNode) {
+        const declaration = b.methodDefinition('method', b.identifier(node.key), node.value);
+        declaration.accessibility = 'public';
+        declaration.comments = node.comments;
+
+        return declaration;
     }
 }

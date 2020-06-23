@@ -1,15 +1,37 @@
 import * as K from "ast-types/gen/kinds";
-import { VueNode } from '@/gen/node';
+import { VueNode } from '@/node';
 
 type ExportDefaultKey = 'name' | 'components' | 'data' | 'props' | 'computed' | 'watch' | 'methods' | 'filters' | 'directives' | 'mixins';
+type GeneratorPlugin = (vueNode: VueNode) => void;
 
+/**
+ * 解析器
+ */
 interface Parser {
 
 }
 
+/**
+ * 生成器
+ */
 interface Generator {
     plugins: any;
     handle(vueNode: VueNode, output: string): void;
+}
+
+type BlockType = 'template' | 'style' | 'script';
+
+/**
+ * 代码块
+ */
+interface Block {
+    type: BlockType;
+    content: string;
+    attr?: Attrs | null;
+}
+
+interface Attrs {
+    [key: string]: string;
 }
 
 // 对于类型进行一定的扩展，以支持更加的丰富的decorators之类的属性

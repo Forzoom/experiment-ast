@@ -11,16 +11,12 @@ import {
     camelCaseWithFirstLetter,
     importFromVuePropertyDecorator,
 } from '@/utils';
-
-interface Block {
-    type: 'template' | 'style';
-    content: string;
-    attr?: {
-        [key: string]: string;
-    };
-}
+import { Block } from 'types';
 
 export class VueNode {
+    /** 文件路径 */
+    filePath?: string;
+
     originalAst: any;
     name: string;
     components?: namedTypes.Property | null;
@@ -36,9 +32,14 @@ export class VueNode {
     lifecycles?: LifecycleNode[] | null;
     comments?: K.CommentKind[] | null;
 
-    template?: Block | Block[];
-    style?: Block | Block[];
+    /** template block */
+    template?: Block[];
+    /** style block */
+    style?: Block[];
+    /** 除了export和import之外的其他内容 */
+    other: namedTypes.Node[] = [];
 
+    /** 组件名字 */
     constructor(name: string) {
         this.name = name;
     }
@@ -100,13 +101,6 @@ export class DataNode {
         property.comments = this.comments;
         return property;
     }
-
-    public toTsClass() {
-        const definition = b.classProperty(b.identifier(this.key), this.init, any());
-        definition.access = 'public';
-        definition.comments = this.comments;
-        return definition;
-    }
 }
 
 export class ComputedNode {
@@ -128,39 +122,6 @@ export class ComputedNode {
         property.comments = this.comments;
         return property;
     }
-
-    public toTsClass() {
-        if (this.store) {
-            let list: string[] = [];
-            let async: boolean | undefined = false;
-            const namespace = this.storeNamespace ? this.storeNamespace.split('/') : [];
-            if (this.value.type === 'FunctionExpression') {
-                const functionExpression = this.value;
-                list = parseMemberExpression((functionExpression.body.body[0] as namedTypes.ReturnStatement).argument as namedTypes.MemberExpression);
-                async = functionExpression.async;
-            } else if (this.value.type === 'ArrowFunctionExpression') {
-                const arrowFunctionExpression = this.value;
-                if (arrowFunctionExpression.body.type === 'MemberExpression') {
-                    list = parseMemberExpression(arrowFunctionExpression.body);
-                    async = arrowFunctionExpression.async;
-                }
-            }
-
-            const memberExpression = formatMemberExpression([ 'store', 'state' ].concat(namespace).concat(list.slice(1)));
-            const returnStatement = b.returnStatement(memberExpression);
-            const newFunctionExpression = b.functionExpression(b.identifier(this.key), [], b.blockStatement([returnStatement]));
-            newFunctionExpression.async = async;
-            const declaration = b.methodDefinition('get', b.identifier(this.key), newFunctionExpression);
-            declaration.accessibility = 'public';
-            declaration.comments = this.comments;
-            return declaration;
-        } else {
-            const declaration = b.methodDefinition('get', b.identifier(this.key), this.value);
-            declaration.accessibility = 'public';
-            declaration.comments = this.comments;
-            return declaration;
-        }
-    }
 }
 
 export class PropNode {
@@ -181,18 +142,6 @@ export class PropNode {
         const property = b.property('init', b.identifier(this.key), value);
         property.comments = this.comments;
         return property;
-    }
-
-    public toTsClass() {
-        const definition = b.classProperty(b.identifier(this.key), null, any());
-        definition.access = 'public';
-        definition.decorators = [
-            b.decorator(b.callExpression(b.identifier('Prop'), [
-                this.value as namedTypes.ObjectExpression,
-            ]))
-        ];
-        definition.comments = this.comments;
-        return definition;
     }
 }
 
@@ -219,23 +168,6 @@ export class WatchNode {
         property.comments = this.comments;
         return property;
     }
-
-    public toTsClass() {
-        // todo: 需要修改函数的名字
-        const declaration = b.tsDeclareMethod(b.identifier('on' + camelCaseWithDollar(this.key) + 'Change'), this.value.params);
-        declaration.kind = 'method'; // 是一个正常函数
-        declaration.async = this.value.async; // 是否async
-        // @ts-ignore
-        declaration.value = this.value; // 函数体内容
-        declaration.accessibility = 'public';
-        declaration.decorators = [
-            b.decorator(b.callExpression(b.identifier('Watch'), [
-                b.literal(this.key),
-            ])),
-        ];
-        declaration.comments = this.comments;
-        return declaration;
-    }
 }
 
 export class MethodNode {
@@ -252,16 +184,6 @@ export class MethodNode {
         property.comments = this.comments;
         return property;
     }
-
-    public toTsClass() {
-        const functionExpression = b.functionExpression(b.identifier(this.key), this.value.params, this.value.body);
-        functionExpression.async = this.value.async;
-        const declaration = b.methodDefinition('method', b.identifier(this.key), functionExpression);
-        declaration.accessibility = 'public';
-        // console.log(method.comments, functionExpression.comments);
-        declaration.comments = this.comments;
-        return declaration;
-    }
 }
 
 export class LifecycleNode {
@@ -272,13 +194,5 @@ export class LifecycleNode {
     constructor(key: string, value: namedTypes.FunctionExpression) {
         this.key = key;
         this.value = value;
-    }
-
-    public toTsClass() {
-        const declaration = b.methodDefinition('method', b.identifier(this.key), this.value);
-        declaration.accessibility = 'public';
-        declaration.comments = this.comments;
-
-        return declaration;
     }
 }

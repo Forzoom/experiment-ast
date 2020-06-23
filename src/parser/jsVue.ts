@@ -15,10 +15,11 @@ import {
     lifecycleNames,
     writeFileSync,
     recrusive,
+    parseBlock,
 } from '@/utils';
 import {
     DataNode, ComputedNode, PropNode, MethodNode, WatchNode, VueNode, LifecycleNode,
-} from '@/gen/node';
+} from '@/node';
 import addParamsTypeAnnotation from '@/gen/plugins/addParamsTypeAnnotation';
 import addImportStore from '@/gen/plugins/addImportStore';
 
@@ -134,12 +135,14 @@ export default class JSVueParser {
             return;
         }
         const originalCode = fs.readFileSync(input, 'utf-8');
-        const scriptContent = getScriptContent(originalCode);
-        if (!scriptContent) {
+        // 解析block
+        const blocks = parseBlock(originalCode);
+        const scriptBlocks = blocks.filter(block => block.type === 'script');
+        if (scriptBlocks.length <= 0) {
             console.warn(input + ' script is lost');
             return;
         }
-        const originalAst = recast.parse(scriptContent.jsScript, {
+        const originalAst = recast.parse(scriptBlocks[0].content, {
             parser: {
                 parse(source: string, options: any) {
                     return parser.parse(source, Object.assign(options, {
@@ -190,14 +193,13 @@ export default class JSVueParser {
         });
 
         const body = originalAst.program.body as namedTypes.Node[];
-        const other: namedTypes.Node[] = [];
         body.forEach((item) => {
             if (item.type === 'ImportDeclaration') {
                 // nothing
             } else if (item.type === 'ExportDefaultDeclaration') {
                 originalExportDefault = item as namedTypes.ExportDefaultDeclaration;
             } else {
-                other.push(item);
+                vueNode.other.push(item);
             }
         });
 
@@ -261,10 +263,6 @@ export default class JSVueParser {
         vueNode.lifecycles = lifecycleNodes;
         if (originalExportDefault) {
             vueNode.comments = (originalExportDefault as namedTypes.ExportDefaultDeclaration).comments;
-        }
-        for (const plugin of this.plugins) {
-            addParamsTypeAnnotation(vueNode);
-            addImportStore(vueNode);
         }
 
         return vueNode;

@@ -1,7 +1,8 @@
 import { namedTypes, builders as b } from 'ast-types';
-import { VueNode } from '../node';
+import { VueNode } from '@/node';
+import { GeneratorPlugin } from 'types';
 
-export default function (node: VueNode) {
+const plugin: GeneratorPlugin = (node: VueNode) => {
     let hasStore = false;
     if (node.computed) {
         for (const computed of node.computed) {
@@ -16,6 +17,7 @@ export default function (node: VueNode) {
     }
 
     let hasImport = false;
+    // 如果已经有import store了，那么将不再引入
     if (node.imports) {
         node.imports.forEach((importDeclaration) => {
             if (importDeclaration.specifiers) {
@@ -35,3 +37,5 @@ export default function (node: VueNode) {
         }
     }
 }
+
+export default plugin;

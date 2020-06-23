@@ -5,7 +5,7 @@ import {
 } from 'ast-types';
 import {
     VueNode,
-} from '../node';
+} from '@/node';
 import * as K from 'ast-types/gen/kinds';
 import {
     any,
@@ -33,7 +33,7 @@ function handleParam(params: K.PatternKind[]) {
     return hasRoute;
 }
 
-export default function (node: VueNode) {
+const plugin = (node: VueNode) => {
     let hasRoute = false;
 
     recast.visit(node.originalAst, {
@@ -110,3 +110,5 @@ export default function (node: VueNode) {
         }
     }
 }
+
+export default plugin;

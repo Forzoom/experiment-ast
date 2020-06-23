@@ -40,3 +40,10 @@ export async function recrusive(input: string, output: string, callback: any) {
         }
     }
 }
+
+export function extWith(extname: string, path?: string | null) {
+    if (!path) {
+        return false;
+    }
+    return path.endsWith(extname);
+}

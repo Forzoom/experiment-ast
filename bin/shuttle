@@ -6,6 +6,8 @@ const argv = require('minimist')(process.argv.slice(2), {
 });
 const fs = require('fs');
 const path = require('path');
+const addImportStore = require('../src/gen/plugins/addImportStore');
+const addParamsTypeAnnotation = require('../src/gen/plugins/addParamsTypeAnnotation');
 
 const helpText = `
 --help 帮助内容
@@ -21,8 +23,29 @@ const helpText = `
 --generator 生成器 'jsVue' | 'tsClassVue'
 `;
 
+const cfgTpl = `
+[
+    {
+        "parser": "jsVue",
+        "generator": "tsClassVue",
+        "generatorPlugin": {
+            "addImportStore": true,
+            "addParamsTypeAnnotation": true
+        },
+        "src": "/path/to/src", // 可以是文件/文件夹
+        "dist": "/path/to/dist" // 可以是文件/文件夹
+    }
+];
+`;
+
+// help
 if (argv.help) {
-    console.log();
+    console.log(helpText);
+    return;
+}
+
+// config template
+if (argv['cfg-tpl']) {
     return;
 }
 
@@ -32,6 +55,13 @@ const dist = argv.d || argv.dist;
 const parser = argv.p || argv.parser;
 const generator = argv.g || argv.generator;
 
+/**
+ * 处理过程
+ * @param parserName
+ * @param generatorName 
+ * @param src 
+ * @param dist 
+ */
 function handle(parserName, generatorName, src, dist) {
     let parser = null;
     switch (parserName) {
@@ -45,7 +75,9 @@ function handle(parserName, generatorName, src, dist) {
     case 'tsClassVue': generator = new shuttle.TSClassVueGenerator(); break;
     }
 
+    // 解析
     const parseResult = parser.handle(src);
+    // 生成
     generator(parseResult, dist);
 }
 
