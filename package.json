@@ -33,6 +33,7 @@
   },
   "scripts": {
     "build": "node build/build.js",
-    "test": "node ./bin/util-ast handleJsVue /Volumes/Repo2/repo/vue/tourye_web/src/pages/mine/mine.vue ~/Downloads/mine.vue"
+    "shuttle": "node ./bin/shuttle -s=./assets/mine.vue -d=./assets/mine1.vue -p=jsVue -g=tsClassVue --generator-plugin=addImportStore --generator-plugin=addParamsTypeAnnotation",
+    "shuttle:cfg": "node ./bin/shuttle"
   }
 }

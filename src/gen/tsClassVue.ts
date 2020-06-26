@@ -1,7 +1,8 @@
 import * as recast from 'recast';
 import { VueNode, DataNode, PropNode, WatchNode, MethodNode, LifecycleNode, ComputedNode } from '@/node';
 import { builders as b, namedTypes } from 'ast-types';
-import { Generator, GeneratorPlugin, Block } from 'types/index';
+import { Block } from 'types/index';
+import { Generator } from '@/gen/index';
 import {
     any,
     writeFileSync,
@@ -13,13 +14,7 @@ import {
     formatBlock,
 } from '@/utils';
 
-export default class TSClassVueGenerator implements Generator {
-    public plugins: GeneratorPlugin[] = [];
-
-    public constructor(plugins?: GeneratorPlugin[]) {
-        this.plugins = plugins || [];
-    }
-
+export default class TSClassVueGenerator extends Generator {
     public async handle(vueNode: VueNode, output: string) {
         // 定义class
         const clazz = b.classDeclaration(
@@ -87,6 +82,11 @@ export default class TSClassVueGenerator implements Generator {
             ];
         }
 
+        // 处理plugin
+        for (const plugin of this.plugins) {
+            plugin(vueNode);
+        }
+
         const generatedAst = recast.parse('', {
             tabWidth: 4,
         });
@@ -105,7 +105,7 @@ export default class TSClassVueGenerator implements Generator {
                 lang: 'ts',
             },
         };
-        const code = formatBlock([ ...vueNode.template, scriptBlock, ...vueNode.style ]);
+        const code = formatBlock([ ...(vueNode.template || []), scriptBlock, ...(vueNode.style || []) ]);
         
         writeFileSync(output, code);
     }

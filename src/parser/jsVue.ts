@@ -264,6 +264,8 @@ export default class JSVueParser {
         if (originalExportDefault) {
             vueNode.comments = (originalExportDefault as namedTypes.ExportDefaultDeclaration).comments;
         }
+        vueNode.template = blocks.filter(block => block.type === 'template');
+        vueNode.style = blocks.filter(block => block.type === 'style');
 
         return vueNode;
     }

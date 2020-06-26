@@ -5,16 +5,11 @@ import {
     namedTypes,
     builders as b,
 } from 'ast-types';
-import { Generator, GeneratorPlugin, Block } from 'types/index';
+import { Block } from 'types/index';
 import { extWith, formatBlock } from '@/utils';
+import { Generator } from '@/gen/index';
 
-export default class JSClassVueGenerator implements Generator {
-    public plugins: GeneratorPlugin[] = [];
-
-    public constructor(plugins?: GeneratorPlugin[]) {
-        this.plugins = plugins || [];
-    }
-
+export default class JSClassVueGenerator extends Generator {
     public handle(vueNode: VueNode, output: string) {
         const dataFn = b.functionExpression(
             b.identifier('data'),

@@ -1,4 +1,5 @@
-<template>
+<template >
+
     <div class="mine-boss">
         <!-- 上方个人信息 -->
         <div class="mine-user">
@@ -129,8 +130,8 @@
         <!-- 底部导航 -->
         <NewTab :selected="4"></NewTab>
     </div>
-</template>
 
+</template>
 <script lang="ts">
 import {
     ID_MINE,
@@ -323,8 +324,8 @@ export default class Mine extends Vue {
     }
 }
 </script>
-
 <style lang="less">
+
     @import '../../lib/style/mixins.less';
     @import '../../lib/util.less';
     .mine-boss {
@@ -334,79 +335,79 @@ export default class Mine extends Vue {
         .mine-user {
             position: relative;
             box-sizing: border-box;
-            padding: 0px 14px;
-            height: 117px;
+            .px2rem6(padding, 0, 14);
+            .px2rem6(height, 117);
             background: url(../../assets/user-bg.png) center no-repeat;
             background-size: cover;
         }
         .user {
             position: relative;
-            top: 40px;
-            padding: 15px 0px 15px 30px;
-            border-top-left-radius: 4px;
-            border-top-right-radius: 4px;
+            .px2rem6(top, 40);
+            .px2rem6(padding, 15, 0, 15, 30);
+            .px2rem6(border-top-left-radius, unit(4));
+            .px2rem6(border-top-right-radius, 4);
             background: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
             .avatar {
-                width: 48px;
-                height: 48px;
+                .px2rem6(width, 48);
+                .px2rem6(height, 48);
                 border-radius:50%;
                 background-color: @color-avatar-bg;
             }
             .name {
-                width: 120px;
-                max-height: 44px;
-                margin-left: -50px;
-                padding: 0px 5px;
+                .px2rem6(width, 120);
+                .px2rem6(max-height, 44);
+                .px2rem6(margin-left, -50);
+                .px2rem6(padding, 0, 5);
                 font-weight: bold;
                 overflow: hidden;
             }
             .id {
                 box-sizing: border-box;
-                width: 80px;
-                height: 25px;
-                padding-left: 10px;
-                line-height: 25px;
-                 border-radius: 25px 0px 0px 25px;
+                .px2rem6(width, 80);
+                .px2rem6(height, 25);
+                .px2rem6(padding-left, 10);
+                .px2rem6(line-height, 25);
+                .px2rem6( border-radius, 25, 0, 0, 25);
                 background-color: rgba(204, 28, 36, 1);
                 color: white;
             }
         }
         .mine-account {
             box-sizing: border-box;
-            padding: 0px 14px 0px;
-            height: 190px;
+            .px2rem6(padding, 0, 14, 0);
+            .px2rem6(height, 190);
             &>div:first-child {
-                height: 80px;
+                .px2rem6(height, 80);
             }
         }
         .account {
             box-sizing: border-box;
-            height: 90px;
-            margin-bottom: 10px;
+            .px2rem6(height, 90);
+            .px2rem6(margin-bottom, 10);
             background: white;
-             border-radius: 4px;
+            .px2rem6( border-radius, 4);
             display: flex;
             justify-content: space-around;
             align-items: center;
             text-align: center;
             .num {
-                line-height: 28px;
-                font-size: 20px;
+                .px2rem6(line-height, 28);
+                .px2rem6(font-size, 20);
                 color:#333333;
                 font-weight: bold;
             }
             .title {
-                margin-top: 10px;
-                line-height: 20px;
-                font-size: 14px;
+                .px2rem6(margin-top, 10);
+                .px2rem6(line-height, 20);
+                .px2rem6(font-size, 14);
                 color: #333333;
             }
             .icon {
                  color:#333333;
-                font-size: 24px;
+                .px2rem6(font-size, 24);
             }
             .gift {
                 position: relative;
@@ -419,16 +420,17 @@ export default class Mine extends Vue {
         }
         .content-wrap  {
             .content-section {
-                padding: 0px 14px;
-                margin-bottom: 10px;
+                .px2rem6(padding, 0, 14);
+                .px2rem6(margin-bottom, 10);
                 .list-item-wrap {
                     .fl {
                         .icon {
-                            font-size: 19px;
+                            .px2rem6(font-size, 19);
                         }
                     }
                 }
             }
         }
     }
+
 </style>

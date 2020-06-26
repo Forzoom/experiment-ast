@@ -11,14 +11,6 @@ interface Parser {
 
 }
 
-/**
- * 生成器
- */
-interface Generator {
-    plugins: any;
-    handle(vueNode: VueNode, output: string): void;
-}
-
 type BlockType = 'template' | 'style' | 'script';
 
 /**

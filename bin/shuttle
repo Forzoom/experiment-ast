@@ -6,10 +6,9 @@ const argv = require('minimist')(process.argv.slice(2), {
 });
 const fs = require('fs');
 const path = require('path');
-const addImportStore = require('../src/gen/plugins/addImportStore');
-const addParamsTypeAnnotation = require('../src/gen/plugins/addParamsTypeAnnotation');
 
 const helpText = `
+ -h
 --help 帮助内容
  -f
 --file 配置文件路径
@@ -21,25 +20,27 @@ const helpText = `
 --parser 解析器 'jsVue' | 'tsClassVue'
  -g
 --generator 生成器 'jsVue' | 'tsClassVue'
+--generator-plugin 生成器插件 addImportStore addParamsTypeAnnotation
+--parser-generator jsStore | jsRouter
 `;
 
 const cfgTpl = `
 [
     {
+        "src": "/path/to/src", // 可以是文件/文件夹
+        "dist": "/path/to/dist" // 可以是文件/文件夹
         "parser": "jsVue",
         "generator": "tsClassVue",
         "generatorPlugin": {
             "addImportStore": true,
             "addParamsTypeAnnotation": true
         },
-        "src": "/path/to/src", // 可以是文件/文件夹
-        "dist": "/path/to/dist" // 可以是文件/文件夹
     }
 ];
 `;
 
 // help
-if (argv.help) {
+if (argv.h || argv.help) {
     console.log(helpText);
     return;
 }
@@ -54,37 +55,63 @@ const src = argv.s || argv.src;
 const dist = argv.d || argv.dist;
 const parser = argv.p || argv.parser;
 const generator = argv.g || argv.generator;
+const parserPlugins = argv['parser-plugin'] || [];
+const generatorPlugins = argv['generator-plugin'] || [];
+const parserGenerator = argv['parser-generator'];
 
 /**
- * 处理过程
+ * 处理parser和generator
  * @param parserName
  * @param generatorName 
  * @param src 
  * @param dist 
  */
-function handle(parserName, generatorName, src, dist) {
+async function handle(parserName, generatorName, src, dist, parserPlugins, generatorPlugins) {
     // 生成parser
     let parser = null;
     switch (parserName) {
-    case 'jsVue': parser = new shuttle.JSVueParser(); break;
-    case 'tsClassVue': parser = new shuttle.TSClassVueParser(); break;
+    case 'jsVue': parser = new shuttle.JSVueParser.default(); break;
+    case 'tsClassVue': parser = new shuttle.TSClassVueParser.default(); break;
     }
 
     // 生成generator
     let generator = null;
     switch (generatorName) {
-    case 'jsVue': generator = new shuttle.JSVueGenerator(); break;
-    case 'tsClassVue': generator = new shuttle.TSClassVueGenerator(); break;
+    case 'jsVue': generator = new shuttle.JSVueGenerator.default(); break;
+    case 'tsClassVue': generator = new shuttle.TSClassVueGenerator.default(); break;
+    }
+
+    for (const pluginName of generatorPlugins || []) {
+        const plugin = shuttle.genPlugin[pluginName];
+        if (plugin) {
+            generator.addPlugin(plugin);
+        }
     }
 
     // 解析
-    const parseResult = parser.handle(src);
+    const parseResult = await parser.handle(src);
     // 生成
-    generator(parseResult, dist);
+    generator.handle(parseResult, dist);
 }
 
 /**
- * 
+ * 处理paserGenerator
+ * @param parserGeneratorName
+ * @param src 
+ * @param dist 
+ */
+async function handleParserGenerator(parserGeneratorName, src, dist) {
+    let parserGen = null;
+    switch (parserGeneratorName) {
+    case 'jsStore': parserGen = new shuttle.JSStoreParserGenerator.default(); break;
+    case 'jsRouter': parserGen = new shuttle.JSRouterParserGenerator.default(); break;
+    }
+
+    parserGen.handle(src, dist);
+}
+
+/**
+ * 处理config中的内容
  * @param cfg 配置路径
  */
 function handleCfg(cfg) {
@@ -95,22 +122,29 @@ function handleCfg(cfg) {
 
     for (const opt of configOptions) {
         const {
-            cmd,
+            parser,
+            generator,
+            parserPlugins,
+            generatorPlugins,
+            parserGenerator,
             src,
             dist,
         } = opt;
 
-        addParamsTypeAnnotation(vueNode);
-        addImportStore(vueNode);
-
-        handleCmd(cmd, src, dist);
+        if (parserGenerator) {
+            handleParserGenerator(parserGenerator, src, dist);
+        } else if (parser, generator) {
+            handle(parser, generator, src, dist, parserPlugins || [], generatorPlugins || []);
+        }
     }
 }
 
 if (cfg) {
     handleCfg(cfg);
 } else if (parser && generator && src && dist) {
-    handle(cmd, src, dist);
-} else if (fs.existsSync(path.join(__dirname, 'shuttle.config.js'))) {
-    handleCfg(path.join(__dirname, 'shuttle.config.js'));
+    handle(parser, generator, src, dist, parserPlugins, generatorPlugins);
+} else if (parserGenerator) {
+    handleParserGenerator(parserGenerator, src, dist);
+} else if (fs.existsSync(path.join(__dirname, '../shuttle.config.json'))) {
+    handleCfg(path.join(__dirname, '../shuttle.config.json'));
 }

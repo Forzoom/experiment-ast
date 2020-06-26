@@ -23,7 +23,7 @@ export function getScriptContent(code: string) {
 }
 
 function parseAttr(str: string) {
-    const parts = str.replaceAll(/[ ]+/, ' ').split(' ');
+    const parts = str.replace(/[ ]+/g, ' ').split(' ');
     const attr: { [key: string]: string } = {};
     for (const part of parts) {
         const match = part.match(/([a-z]+)="([a-z]+)"/);
@@ -49,19 +49,22 @@ function formatAttr(attrs?: Attrs | null) {
  */
 export function parseBlock(code: string) {
     const result: Block[] = [];
-    const regexp = /<(script|template|style) ([a-z'"= ]*)?>/;
+    const regexp = /<(script|template|style)([a-z'"= ]*)?>/;
 
-    const match = code.match(regexp);
-    if (match) {
+    let match = code.match(regexp);
+    while (match) {
         const [ startTag, type, attrStr ] = match;
         const endTag = `</${type}>`;
         const startPos = code.indexOf(startTag);
         const endPos = code.indexOf(endTag);
         result.push({
             type: type as BlockType,
-            content: code.substring(startPos + startTag.length, endPos - endTag.length),
+            content: code.substring(startPos + startTag.length, endPos),
             attr: attrStr ? parseAttr(attrStr) : null,
         });
+        code = code.substr(endPos + endTag.length);
+
+        match = code.match(regexp);
     }
 
     return result;

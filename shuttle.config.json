@@ -1,0 +1,12 @@
+[
+    {
+        "parser": "jsVue",
+        "generator": "tsClassVue",
+        "src": "./assets/mine.vue",
+        "dist": "./assets/mine1.vue",
+        "generatorPlugins": [
+            "addImportStore",
+            "addParamsTypeAnnotation"
+        ]
+    }
+]
