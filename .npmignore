@@ -1,4 +1,6 @@
 /assets
+/build
+/doc
 /node_modules
 /src
 /test
