@@ -41,7 +41,6 @@
   },
   "scripts": {
     "build": "node build/build.js",
-    "shuttle": "node ./bin/shuttle -s=/Users/forzoom/repo/electron-vue/sandglass/src/renderer/components/popup/popup.vue -d=/Users/forzoom/repo/electron-vue/sandglass/src/renderer/components/popup/popup1.vue -p=jsVue -g=tsClassVue --generator-plugin=addImportStore --generator-plugin=addParamsTypeAnnotation",
     "shuttle:cfg": "node ./bin/shuttle",
     "test:unit": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha -r ts-node/register ./test/unit/spec/util.ts"
   }

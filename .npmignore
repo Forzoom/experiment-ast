@@ -4,3 +4,11 @@
 /node_modules
 /src
 /test
+babel.config.js
+index.js
+index1.js
+index2.js
+index3.js
+index4.js
+tsconfig.json
+shuttle.config.json
