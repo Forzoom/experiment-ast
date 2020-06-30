@@ -6,30 +6,31 @@ import { builders as b, namedTypes } from 'ast-types';
 import * as K from 'ast-types/gen/kinds';
 import * as parser from '@babel/parser';
 import {
-    getScriptContent,
     topLevelNames,
     parseBlock,
 } from '@/utils';
 import { VueNode, DataNode, PropNode, ComputedNode, WatchNode, MethodNode, LifecycleNode } from '@/node';
+import { Parser } from './index';
 
 /**
  * 对于vue文件进行处理
  */
-export default class TSClassVueParser {
-    public handle(input: string, output: string) {
-        console.info(input, output);
+export default class TSClassVueParser extends Parser {
+    public handleFile(input: string) {
         const extname = path.extname(input);
         if (extname !== '.vue' && extname !== '.ts') {
-            console.warn(input + ' isnt a vue/ts file');
-            return;
+            throw new Error(input + ' isnt a vue/ts file');
         }
         const originalCode = fs.readFileSync(input, 'utf-8');
+        return this.handleCode(originalCode);
+    }
+
+    public handleCode(code: string) {
         // 解析block
-        const blocks = parseBlock(originalCode);
+        const blocks = parseBlock(code);
         const scriptBlocks = blocks.filter(block => block.type === 'script');
         if (scriptBlocks.length <= 0) {
-            console.warn(input + ' script is lost');
-            return;
+            throw new Error('script is lost');
         }
 
         const originalAst = recast.parse(scriptBlocks[0].content, {
@@ -110,13 +111,11 @@ export default class TSClassVueParser {
         }
 
         if (!exportDefaultDeclaration) {
-            console.warn('cannot find export default');
-            return;
+            throw new Error('cannot find export default');
         }
         const classDeclaration: namedTypes.ClassDeclaration | null = exportDefaultDeclaration.declaration as namedTypes.ClassDeclaration;
         if (!classDeclaration.decorators) {
-            console.warn('cannot find class decorators');
-            return;
+            throw new Error('cannot find class decorators');
         }
 
         // 寻找所有的变量定义

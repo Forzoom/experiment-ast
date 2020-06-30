@@ -10,7 +10,7 @@ import { extWith, formatBlock } from '@/utils';
 import { Generator } from '@/gen/index';
 
 export default class JSClassVueGenerator extends Generator {
-    public handle(vueNode: VueNode, output: string) {
+    public handleCode(vueNode: VueNode) {
         const dataFn = b.functionExpression(
             b.identifier('data'),
             [],
@@ -68,6 +68,11 @@ export default class JSClassVueGenerator extends Generator {
         };
         const code = formatBlock([ ...vueNode.template, scriptBlock, ...vueNode.style ]);
 
+        return code;
+    }
+
+    public handleFile(vueNode: VueNode, output: string) {
+        const code = this.handleCode(vueNode);
         fs.writeFileSync(output, code);
     }
 

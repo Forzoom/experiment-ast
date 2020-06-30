@@ -17,7 +17,9 @@
     "@rollup/plugin-babel": "^5.0.0",
     "@types/node": "^13.1.8",
     "@typescript-eslint/typescript-estree": "^2.12.1-alpha.26",
+    "chai": "^4.2.0",
     "minimist": "^1.2.5",
+    "mocha": "^8.0.1",
     "postcss": "^7.0.27",
     "postcss-less": "^3.1.4",
     "recast": "^0.18.5",
@@ -33,7 +35,8 @@
   },
   "scripts": {
     "build": "node build/build.js",
-    "shuttle": "node ./bin/shuttle -s=./assets/mine.vue -d=./assets/mine1.vue -p=jsVue -g=tsClassVue --generator-plugin=addImportStore --generator-plugin=addParamsTypeAnnotation",
-    "shuttle:cfg": "node ./bin/shuttle"
+    "shuttle": "node ./bin/shuttle -s=/Users/forzoom/repo/electron-vue/sandglass/src/renderer/components/popup/popup.vue -d=/Users/forzoom/repo/electron-vue/sandglass/src/renderer/components/popup/popup1.vue -p=jsVue -g=tsClassVue --generator-plugin=addImportStore --generator-plugin=addParamsTypeAnnotation",
+    "shuttle:cfg": "node ./bin/shuttle",
+    "test:unit": "mocha ./test/unit/spec"
   }
 }

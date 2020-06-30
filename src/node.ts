@@ -95,9 +95,9 @@ export class WatchNode {
 
 export class MethodNode {
     key: string;
-    value: namedTypes.FunctionExpression;
+    value: namedTypes.FunctionExpression | namedTypes.ArrowFunctionExpression;
     comments?: K.CommentKind[] | null;
-    constructor(key: string, value: namedTypes.FunctionExpression) {
+    constructor(key: string, value: namedTypes.FunctionExpression | namedTypes.ArrowFunctionExpression) {
         this.key = key;
         this.value = value;
     }

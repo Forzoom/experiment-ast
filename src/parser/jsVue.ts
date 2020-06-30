@@ -5,12 +5,9 @@ import path from 'path';
 import { builders as b, namedTypes } from 'ast-types';
 import * as K from 'ast-types/gen/kinds';
 import * as parser from '@babel/parser';
-import {
-    handleCode as handleLess, handleCode,
-} from '@/less';
+
 import {
     Extract,
-    getScriptContent,
     routerLifecycleNames,
     lifecycleNames,
     writeFileSync,
@@ -20,8 +17,7 @@ import {
 import {
     DataNode, ComputedNode, PropNode, MethodNode, WatchNode, VueNode, LifecycleNode,
 } from '@/node';
-import addParamsTypeAnnotation from '@/gen/plugins/addParamsTypeAnnotation';
-import addImportStore from '@/gen/plugins/addImportStore';
+import { Parser } from './index';
 
 function handleImport(imports: namedTypes.ImportDeclaration[]) {
     imports.forEach((importDeclaration) => {
@@ -92,6 +88,10 @@ function handleMethod(methods: namedTypes.Property[]) {
             const node = new MethodNode((method.key as namedTypes.Identifier).name, method.value);
             node.comments = method.comments;
             return node;
+        } else if (method.value.type === 'ArrowFunctionExpression') {
+            const node = new MethodNode((method.key as namedTypes.Identifier).name, method.value);
+            node.comments = method.comments;
+            return node;
         }
     })
 }
@@ -116,31 +116,27 @@ function handleWatch(list: namedTypes.Property[]) {
 /**
  * 对于vue文件进行处理
  */
-export default class JSVueParser {
-    public plugins: any;
-
-    public constructor(plugins: any) {
-        this.plugins = plugins;
-    }
-
+export default class JSVueParser extends Parser {
     /**
      * 处理数据
      */
-    public async handle(input: string) {
+    public handleFile(input: string) {
         console.info(input);
 
         const extname = path.extname(input);
         if (extname !== '.vue') {
-            console.warn(input + ' isnt a vue file');
-            return;
+            throw new Error(input + ' isnt a vue file');
         }
         const originalCode = fs.readFileSync(input, 'utf-8');
+        return this.handleCode(originalCode);
+    }
+
+    public handleCode(code: string) {
         // 解析block
-        const blocks = parseBlock(originalCode);
+        const blocks = parseBlock(code);
         const scriptBlocks = blocks.filter(block => block.type === 'script');
         if (scriptBlocks.length <= 0) {
-            console.warn(input + ' script is lost');
-            return;
+            throw new Error('script is lost');
         }
         const originalAst = recast.parse(scriptBlocks[0].content, {
             parser: {
@@ -204,11 +200,9 @@ export default class JSVueParser {
         });
 
         handleImport(importDeclarations);
-        console.info('handle import done!');
 
         if (!name) {
-            console.warn('lost name');
-            return;
+            throw new Error('lost name');
         }
         /** 类名，大写开头 */
         const className = (name.value as namedTypes.StringLiteral).value;
@@ -218,35 +212,30 @@ export default class JSVueParser {
         if (props) {
             propNodes = handleProp(props);
         }
-        console.info('handle props done!');
 
         // 处理data
         let dataNodes: DataNode[] = [];
         if (dataFunc) {
             dataNodes = handleData(dataFunc);
         }
-        console.info('handle data done!');
 
         // 处理computed
         let computedNodes: ComputedNode[] = [];
         if (computed) {
             computedNodes = handleComputed(computed);
         }
-        console.info('handle computed done!');
 
         // 处理method
         let methodNodes: MethodNode[] = [];
         if (methods) {
             methodNodes = handleMethod((methods.value as namedTypes.ObjectExpression).properties as namedTypes.Property[]).filter(_ => _) as MethodNode[];
         }
-        console.info('handle methods done!');
 
         // 处理watch
         let watchNodes: WatchNode[] = [];
         if (watchList) {
             watchNodes = handleWatch((watchList.value as namedTypes.ObjectExpression).properties as namedTypes.Property[]);
         }
-        console.info('handle watch done!');
 
         const vueNode = new VueNode(className);
         vueNode.originalAst = originalAst;

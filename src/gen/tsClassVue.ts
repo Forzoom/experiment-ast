@@ -15,7 +15,7 @@ import {
 } from '@/utils';
 
 export default class TSClassVueGenerator extends Generator {
-    public async handle(vueNode: VueNode, output: string) {
+    public handleCode(vueNode: VueNode) {
         // 定义class
         const clazz = b.classDeclaration(
             b.identifier(camelCaseWithFirstLetter(vueNode.name)),
@@ -96,6 +96,7 @@ export default class TSClassVueGenerator extends Generator {
             tabWidth: 4,
             quote: 'single',
             trailingComma: true,
+            arrowParensAlways: true,
         }).code;
     
         const scriptBlock: Block = {
@@ -107,6 +108,11 @@ export default class TSClassVueGenerator extends Generator {
         };
         const code = formatBlock([ ...(vueNode.template || []), scriptBlock, ...(vueNode.style || []) ]);
         
+        return code;
+    }
+
+    public handleFile(vueNode: VueNode, output: string) {
+        const code = this.handleCode(vueNode);
         writeFileSync(output, code);
     }
 
@@ -180,7 +186,7 @@ export default class TSClassVueGenerator extends Generator {
     }
 
     public method(node: MethodNode) {
-        const functionExpression = b.functionExpression(b.identifier(node.key), node.value.params, node.value.body);
+        const functionExpression = b.functionExpression(b.identifier(node.key), node.value.params, node.value.body as namedTypes.BlockStatement);
         functionExpression.async = node.value.async;
         const declaration = b.methodDefinition('method', b.identifier(node.key), functionExpression);
         declaration.accessibility = 'public';

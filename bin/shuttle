@@ -1,6 +1,6 @@
 #! /usr/bin/env node
 const process = require('process');
-const shuttle = require('../dist/experiment-ast.cjs.js');
+const shuttle = require('../dst/experiment-ast.cjs.js');
 const argv = require('minimist')(process.argv.slice(2), {
     boolean: true,
 });
@@ -15,7 +15,7 @@ const helpText = `
  -s
 --src  源文件路径
  -d
---dist 写入文件路径
+--dst 写入文件路径
  -p
 --parser 解析器 'jsVue' | 'tsClassVue'
  -g
@@ -28,7 +28,7 @@ const cfgTpl = `
 [
     {
         "src": "/path/to/src", // 可以是文件/文件夹
-        "dist": "/path/to/dist" // 可以是文件/文件夹
+        "dst": "/path/to/dst" // 可以是文件/文件夹
         "parser": "jsVue",
         "generator": "tsClassVue",
         "generatorPlugin": {
@@ -52,7 +52,7 @@ if (argv['cfg-tpl']) {
 
 const cfg = argv.f || argv.file;
 const src = argv.s || argv.src;
-const dist = argv.d || argv.dist;
+const dst = argv.d || argv.dst;
 const parser = argv.p || argv.parser;
 const generator = argv.g || argv.generator;
 const parserPlugins = argv['parser-plugin'] || [];
@@ -64,9 +64,9 @@ const parserGenerator = argv['parser-generator'];
  * @param parserName
  * @param generatorName 
  * @param src 
- * @param dist 
+ * @param dst 
  */
-async function handle(parserName, generatorName, src, dist, parserPlugins, generatorPlugins) {
+async function handle(parserName, generatorName, src, dst, parserPlugins, generatorPlugins) {
     // 生成parser
     let parser = null;
     switch (parserName) {
@@ -91,23 +91,23 @@ async function handle(parserName, generatorName, src, dist, parserPlugins, gener
     // 解析
     const parseResult = await parser.handle(src);
     // 生成
-    generator.handle(parseResult, dist);
+    generator.handle(parseResult, dst);
 }
 
 /**
  * 处理paserGenerator
  * @param parserGeneratorName
  * @param src 
- * @param dist 
+ * @param dst 
  */
-async function handleParserGenerator(parserGeneratorName, src, dist) {
+async function handleParserGenerator(parserGeneratorName, src, dst) {
     let parserGen = null;
     switch (parserGeneratorName) {
     case 'jsStore': parserGen = new shuttle.JSStoreParserGenerator.default(); break;
     case 'jsRouter': parserGen = new shuttle.JSRouterParserGenerator.default(); break;
     }
 
-    parserGen.handle(src, dist);
+    parserGen.handle(src, dst);
 }
 
 /**
@@ -128,23 +128,23 @@ function handleCfg(cfg) {
             generatorPlugins,
             parserGenerator,
             src,
-            dist,
+            dst,
         } = opt;
 
         if (parserGenerator) {
-            handleParserGenerator(parserGenerator, src, dist);
+            handleParserGenerator(parserGenerator, src, dst);
         } else if (parser, generator) {
-            handle(parser, generator, src, dist, parserPlugins || [], generatorPlugins || []);
+            handle(parser, generator, src, dst, parserPlugins || [], generatorPlugins || []);
         }
     }
 }
 
 if (cfg) {
     handleCfg(cfg);
-} else if (parser && generator && src && dist) {
-    handle(parser, generator, src, dist, parserPlugins, generatorPlugins);
+} else if (parser && generator && src && dst) {
+    handle(parser, generator, src, dst, parserPlugins, generatorPlugins);
 } else if (parserGenerator) {
-    handleParserGenerator(parserGenerator, src, dist);
+    handleParserGenerator(parserGenerator, src, dst);
 } else if (fs.existsSync(path.join(__dirname, '../shuttle.config.json'))) {
     handleCfg(path.join(__dirname, '../shuttle.config.json'));
 }

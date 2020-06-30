@@ -1,14 +1,64 @@
-1.  [ ] 删除params最后的逗号
-2.  [ ] 考虑是否能对less文件进行处理
-3.  [ ] 在必要的时候补充store引入
-4.  [ ] 处理arrow function时参数缺少括号的问题
-5.  [ ] 添加配置执行
+### Start
 
-Q:
-1. [ ] 无法支持jsx
-2. [ ] 目前没有支持插件自定义扩展
-   1. [ ] 扩展parser
-   2. [ ] 扩展generator
-      1. [ ] 
+```bash
+yarn add shuttle
+# 或者
+npm install shuttle
 
-将代码解析成vueNode之后，向多个版本生成
+# 全局安装
+yarn global add shuttle
+# 或者
+npm install shuttle -g
+```
+
+### Usage
+
+#### 命令行形式
+
+shuttle库提供了命令行形式
+
+```bash
+shuttle --help # 查看提示信息
+shuttle -s=/path/to/src/component.vue\ # 指定源文件路径
+  -d=/path/to/dst/component.vue\ # 指定生成文件路径
+  -p=jsVue\ # 指定解析器
+  -g=tsClassVue\ # 指定生成其
+  --generator-plugin=addImportStore\ # 指定生成器插件
+  --generator-plugin=addParamsTypeAnnotation # 指定生成器插件
+```
+
+#### 解析器
+
+支持: `jsVue`、`tsClassVue`
+
+其中
+
+`jsVue`格式为
+```javascript
+export default {
+    name: 'Cmp',
+}
+```
+`tsClassVue`格式为
+```typescript
+@Component({
+    name: 'Cmp'
+})
+export default class Cmp extends Vue {}
+```
+
+#### 生成器
+
+支持: `jsVue`、`tsClassVue`，其格式类型和解析器中相同
+
+#### 代码引入
+
+除了命令行模式外还支持代码引入
+
+### Test
+
+应该如何做test呢?
+
+### Todo
+
+1. 当template中有多个template的情况下，会发生错误

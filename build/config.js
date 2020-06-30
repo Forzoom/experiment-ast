@@ -10,7 +10,7 @@ module.exports = exports = [
     {
         input: './src/index.ts',
         output: {
-            file: './dist/experiment-ast.esm.js',
+            file: './dist/shuttle.esm.js',
             format: 'esm',
         },
         plugins: [
@@ -35,7 +35,7 @@ module.exports = exports = [
     {
         input: './src/index.ts',
         output: {
-            file: './dist/experiment-ast.cjs.js',
+            file: './dist/shuttle.cjs.js',
             format: 'cjs',
         },
         plugins: [
@@ -61,7 +61,7 @@ module.exports = exports = [
     {
         input: './src/index.ts',
         output: {
-            file: './dist/experiment-ast.js',
+            file: './dist/shuttle.js',
             name: 'LargeList',
             format: 'umd',
         },
