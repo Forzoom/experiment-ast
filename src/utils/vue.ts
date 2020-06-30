@@ -31,22 +31,70 @@ function formatAttr(attrs?: Attrs | null) {
  */
 export function parseBlock(code: string) {
     const result: Block[] = [];
-    const regexp = /<(script|template|style)([a-z'"= ]*)?>/;
+    const startRegexp = /<(script|template|style)([a-z'"= ]*)?>/;
+    const endRegexp = /<\/(script|template|style)>/;
 
-    let match = code.match(regexp);
-    while (match) {
-        const [ startTag, type, attrStr ] = match;
-        const endTag = `</${type}>`;
-        const startPos = code.indexOf(startTag);
-        const endPos = code.indexOf(endTag);
-        result.push({
-            type: type as BlockType,
-            content: code.substring(startPos + startTag.length, endPos),
-            attr: attrStr ? parseAttr(attrStr) : null,
-        });
-        code = code.substr(endPos + endTag.length);
+    let terminate = false;
+    let index = 0;
+    let stack: Array<{ tag: string; attr?: string; type: BlockType; pos: number; }> = [];
+    while (!terminate) {
+        let startMatch = code.substr(index).match(startRegexp);
+        let endMatch = code.substr(index).match(endRegexp);
 
-        match = code.match(regexp);
+        if (startMatch && endMatch) {
+            const [ startTag, startType, startAttrStr ] = startMatch;
+            const [ endTag, endType ] = endMatch;
+
+            const startPos = code.indexOf(startTag, index);
+            const endPos = code.indexOf(endTag, index);
+
+            if (startPos < endPos) {
+                stack.push({
+                    tag: startTag,
+                    attr: startAttrStr,
+                    type: startType as BlockType,
+                    pos: startPos,
+                });
+
+                index = startPos + startTag.length;
+            } else {
+                if (stack.length > 0) {
+                    // 弹栈
+                    if (endType === stack[stack.length - 1].type) {
+                        const start = stack.pop()!;
+                        if (stack.length === 0) {
+                            result.push({
+                                type: start.type,
+                                content: code.substring(start.pos + start.tag.length, endPos),
+                                attr: start.attr ? parseAttr(start.attr) : null,
+                            });
+                        }
+                    }
+                }
+                index = endPos + endTag.length;
+            }
+        } else if (endMatch) {
+            const [ endTag, endType ] = endMatch;
+
+            const endPos = code.indexOf(endTag, index);
+
+            if (stack.length > 0) {
+                // 弹栈
+                if (endType === stack[stack.length - 1].type) {
+                    const start = stack.pop()!;
+                    if (stack.length === 0) {
+                        result.push({
+                            type: start.type,
+                            content: code.substring(start.pos + start.tag.length, endPos),
+                            attr: start.attr ? parseAttr(start.attr) : null,
+                        });
+                    }
+                }
+            }
+            index = endPos + endTag.length;
+        } else {
+            terminate = true;
+        }
     }
 
     return result;

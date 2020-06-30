@@ -15,6 +15,8 @@
     "@babel/runtime": "^7.8.4",
     "@rollup/plugin-alias": "^3.1.0",
     "@rollup/plugin-babel": "^5.0.0",
+    "@types/chai": "^4.2.11",
+    "@types/mocha": "^7.0.2",
     "@types/node": "^13.1.8",
     "@typescript-eslint/typescript-estree": "^2.12.1-alpha.26",
     "chai": "^4.2.0",
@@ -28,6 +30,7 @@
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-resolve": "^5.2.0",
     "source-map": "^0.7.3",
+    "ts-node": "^8.10.2",
     "typescript": "^3.7.4"
   },
   "bin": {
@@ -37,6 +40,6 @@
     "build": "node build/build.js",
     "shuttle": "node ./bin/shuttle -s=/Users/forzoom/repo/electron-vue/sandglass/src/renderer/components/popup/popup.vue -d=/Users/forzoom/repo/electron-vue/sandglass/src/renderer/components/popup/popup1.vue -p=jsVue -g=tsClassVue --generator-plugin=addImportStore --generator-plugin=addParamsTypeAnnotation",
     "shuttle:cfg": "node ./bin/shuttle",
-    "test:unit": "mocha ./test/unit/spec"
+    "test:unit": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha -r ts-node/register ./test/unit/spec/util.ts"
   }
 }
