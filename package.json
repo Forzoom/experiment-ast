@@ -1,11 +1,11 @@
 {
-  "name": "shuttle",
-  "version": "0.0.1",
+  "name": "@forzoom/shuttle",
+  "version": "0.0.3",
   "main": "dist/experiment-ast.cjs.js",
   "module": "dist/experiment-ast.esm.js",
   "types": "./types",
   "license": "MIT",
-  "dependencies": {
+  "devDependencies": {
     "@babel/core": "^7.8.3",
     "@babel/parser": "^7.7.7",
     "@babel/plugin-proposal-class-properties": "^7.8.3",
@@ -25,9 +25,7 @@
     "mocha": "^8.0.1",
     "postcss": "^7.0.27",
     "postcss-less": "^3.1.4",
-    "recast": "^0.18.5"
-  },
-  "devDependencies": {
+    "recast": "^0.18.5",
     "rollup": "^2.10.0",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-builtins": "^2.1.2",

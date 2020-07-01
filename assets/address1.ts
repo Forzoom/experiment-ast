@@ -3,8 +3,8 @@ import {
     isUndef,
 } from '@/lib/utils';
 
-import { Module } from "vuex";
-import { RootState } from "@/types/store";
+import { Module } from 'vuex';
+import { RootState } from '@/types/store';
 
 export interface Address1State {
     // 所有的province列表原始数据
@@ -104,7 +104,7 @@ const m: Module<Address1State, RootState> = {
             }
             return state._listMap[id];
         },
-    }
+    },
 };
 
 export default m;

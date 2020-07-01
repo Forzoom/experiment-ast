@@ -1,11 +1,12 @@
 #! /usr/bin/env node
 const process = require('process');
-const shuttle = require('../dst/experiment-ast.cjs.js');
+const shuttle = require('../dist/shuttle.cjs.js');
 const argv = require('minimist')(process.argv.slice(2), {
     boolean: true,
 });
 const fs = require('fs');
 const path = require('path');
+const pkg = require('../package.json');
 
 const helpText = `
  -h
@@ -35,9 +36,19 @@ const cfgTpl = `
             "addImportStore": true,
             "addParamsTypeAnnotation": true
         },
+    },
+    {
+        "src": "/path/to/src", // 可以是文件/文件夹
+        "dst": "/path/to/dst" // 可以是文件/文件夹
+        "parserGenerator": "jsStore"
     }
 ];
 `;
+
+if (argv.v || argv.version) {
+    console.log(pkg.version);
+    return;
+}
 
 // help
 if (argv.h || argv.help) {
@@ -89,9 +100,9 @@ async function handle(parserName, generatorName, src, dst, parserPlugins, genera
     }
 
     // 解析
-    const parseResult = await parser.handle(src);
+    const parseResult = await parser.handleFile(src);
     // 生成
-    generator.handle(parseResult, dst);
+    generator.handleFile(parseResult, dst);
 }
 
 /**

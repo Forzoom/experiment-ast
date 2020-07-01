@@ -3,10 +3,15 @@
         "parser": "jsVue",
         "generator": "tsClassVue",
         "src": "./assets/mine.vue",
-        "dist": "./assets/mine1.vue",
+        "dst": "./assets/mine1.vue",
         "generatorPlugins": [
             "addImportStore",
             "addParamsTypeAnnotation"
         ]
+    },
+    {
+        "parserGenerator": "jsStore",
+        "src": "./assets/address1.js",
+        "dst": "./assets/address1.ts"
     }
 ]
