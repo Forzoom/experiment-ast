@@ -1,6 +1,6 @@
 {
   "name": "@forzoom/shuttle",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "main": "dist/experiment-ast.cjs.js",
   "module": "dist/experiment-ast.esm.js",
   "types": "./types",
@@ -18,7 +18,7 @@
     "@rollup/plugin-babel": "^5.0.0",
     "@types/chai": "^4.2.11",
     "@types/mocha": "^7.0.2",
-    "@types/node": "^13.1.8",
+    "@types/node": "^14.0.14",
     "@typescript-eslint/typescript-estree": "^2.12.1-alpha.26",
     "chai": "^4.2.0",
     "minimist": "^1.2.5",

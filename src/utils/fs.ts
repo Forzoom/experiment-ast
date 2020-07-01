@@ -10,12 +10,12 @@ export function writeFileSync(filePath: string, content: string) {
 }
 
 /**
- * 
- * @param input 应该是文件夹
+ * 处理文件
+ * @param input 可以是文件/文件夹
  * @param output 
  * @param callback 
  */
-export async function recrusive(input: string, output: string, callback: any) {
+export async function recursive(input: string, output: string, callback: any) {
     const queue: string[] = [ input ];
 
     // 深度优先搜索

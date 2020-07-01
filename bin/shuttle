@@ -77,7 +77,7 @@ const parserGenerator = argv['parser-generator'];
  * @param src 
  * @param dst 
  */
-async function handle(parserName, generatorName, src, dst, parserPlugins, generatorPlugins) {
+function handle(parserName, generatorName, src, dst, parserPlugins, generatorPlugins) {
     // 生成parser
     let parser = null;
     switch (parserName) {
@@ -99,10 +99,16 @@ async function handle(parserName, generatorName, src, dst, parserPlugins, genera
         }
     }
 
-    // 解析
-    const parseResult = await parser.handleFile(src);
-    // 生成
-    generator.handleFile(parseResult, dst);
+    recursive(src, dst, (src, dst) => {
+        try {
+            // 解析
+            const parseResult = parser.handleFile(src);
+            // 生成
+            generator.handleFile(parseResult, dst);
+        } catch (e) {
+            console.error(e);
+        }
+    });
 }
 
 /**
@@ -111,14 +117,16 @@ async function handle(parserName, generatorName, src, dst, parserPlugins, genera
  * @param src 
  * @param dst 
  */
-async function handleParserGenerator(parserGeneratorName, src, dst) {
+function handleParserGenerator(parserGeneratorName, src, dst) {
     let parserGen = null;
     switch (parserGeneratorName) {
     case 'jsStore': parserGen = new shuttle.JSStoreParserGenerator.default(); break;
     case 'jsRouter': parserGen = new shuttle.JSRouterParserGenerator.default(); break;
     }
 
-    parserGen.handle(src, dst);
+    recursive(src, dst, (src, dst) => {
+        parserGen.handle(src, dst);
+    });
 }
 
 /**
@@ -150,12 +158,54 @@ function handleCfg(cfg) {
     }
 }
 
+/**
+ * 处理文件
+ * @param input 可以是文件/文件夹
+ * @param output 
+ * @param callback 
+ */
+function recursive(input, output, callback) {
+    const queue = [ input ];
+
+    // 深度优先搜索
+    while (queue.length > 0) {
+        const filePath = queue.shift();
+        if (!filePath) {
+            continue;
+        }
+        const stats = fs.statSync(filePath);
+        const isDirectory = stats.isDirectory();
+        if (isDirectory) {
+            // 如果是文件夹，加入queue
+            const children = fs.readdirSync(filePath);
+            queue.unshift(...children.map(child => path.join(filePath, child)));
+        } else {
+            const outputPath = output + filePath.substr(input.length);
+            fs.mkdirSync(path.dirname(outputPath), {
+                recursive: true,
+                mode: 0o755,
+            });
+            callback(filePath, outputPath);
+        }
+    }
+}
+
 if (cfg) {
     handleCfg(cfg);
 } else if (parser && generator && src && dst) {
     handle(parser, generator, src, dst, parserPlugins, generatorPlugins);
 } else if (parserGenerator) {
     handleParserGenerator(parserGenerator, src, dst);
-} else if (fs.existsSync(path.join(__dirname, '../shuttle.config.json'))) {
-    handleCfg(path.join(__dirname, '../shuttle.config.json'));
+} else {
+    const parts = process.cwd().split(path.sep);
+    console.log(parts);
+    while (parts.length > 0) {
+        const filePath = path.sep + path.join(...parts, 'shuttle.config.json');
+        console.log(filePath);
+        if (fs.existsSync(filePath)) {
+            handleCfg(filePath);
+            break;
+        }
+        parts.pop();
+    }
 }
