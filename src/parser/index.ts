@@ -3,8 +3,8 @@ import { VueNode } from '@/node';
 export abstract class Parser {
     public plugins: any;
 
-    public constructor(plugins: any) {
-        this.plugins = plugins;
+    public constructor(plugins?: any) {
+        this.plugins = plugins || [];
     }
 
     /**

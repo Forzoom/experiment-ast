@@ -2,7 +2,7 @@ import './polyfill/polyfill';
 
 // parser
 export * as JSVueParser from './parser/jsVue';
-export * as TsClassVueParser from './parser/tsClassVue';
+export * as TSClassVueParser from './parser/tsClassVue';
 
 // gen
 export * as JSVueGenerator from './gen/jsVue';

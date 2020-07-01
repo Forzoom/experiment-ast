@@ -6,6 +6,8 @@ const argv = require('minimist')(process.argv.slice(2), {
 });
 const fs = require('fs');
 const path = require('path');
+const postcss = require('postcss');
+const less = require('postcss-less');
 const pkg = require('../package.json');
 
 const helpText = `
@@ -22,7 +24,7 @@ const helpText = `
  -g
 --generator 生成器 'jsVue' | 'tsClassVue'
 --generator-plugin 生成器插件 addImportStore addParamsTypeAnnotation
---parser-generator jsStore | jsRouter
+--parser-generator jsStore | jsRouter | less
 `;
 
 const cfgTpl = `
@@ -117,16 +119,20 @@ function handle(parserName, generatorName, src, dst, parserPlugins, generatorPlu
  * @param src 
  * @param dst 
  */
-function handleParserGenerator(parserGeneratorName, src, dst) {
-    let parserGen = null;
-    switch (parserGeneratorName) {
-    case 'jsStore': parserGen = new shuttle.JSStoreParserGenerator.default(); break;
-    case 'jsRouter': parserGen = new shuttle.JSRouterParserGenerator.default(); break;
-    }
+async function handleParserGenerator(parserGeneratorName, src, dst) {
+    if (parserGeneratorName === 'less') {
+        handleVueFile(src, dst);
+    } else {
+        let parserGen = null;
+        switch (parserGeneratorName) {
+        case 'jsStore': parserGen = new shuttle.JSStoreParserGenerator.default(); break;
+        case 'jsRouter': parserGen = new shuttle.JSRouterParserGenerator.default(); break;
+        }
 
-    recursive(src, dst, (src, dst) => {
-        parserGen.handle(src, dst);
-    });
+        recursive(src, dst, (src, dst) => {
+            parserGen.handle(src, dst);
+        });
+    }
 }
 
 /**
@@ -188,6 +194,85 @@ function recursive(input, output, callback) {
             callback(filePath, outputPath);
         }
     }
+}
+
+/**
+ * 移除unit函数
+ * @param {string} str
+ */
+function _stripUnit(str) {
+    return /unit\(.*\)/.test(str) ? str.replace(/unit\(([^()]*?)\)/g, '$1') : str;
+}
+
+/** 添加px */
+function _addUnit(str) {
+    const n = Number(str);
+    return isNaN(n) ? str : str + 'px';
+}
+
+/**
+ * 将px2rem系列代码移除
+ */
+const plugin = postcss.plugin('postcss-test-plugin', (opts) => {
+    opts = opts || {};
+    return (root, result) => {
+        // console.log('target1', root);
+        root.walkRules((rule) => {
+            // decl.value = '40px';
+            // console.log(rule);
+            // rule.walkAtRules((atRule) => {
+            //     console.log(atRule);
+            // });
+
+            for (var i = 0, len = (rule.nodes || []).length; i < len; i++) {
+                var node = rule.nodes[i];
+                if (node.type == 'atrule' && node.name == 'px2rem6') {
+                    const params = node.params.substring(1, node.params.length - 1).split(/\s*,\s*/);
+                    const prop = params[0];
+                    const value = params.slice(1).map(value => _addUnit(_stripUnit(value))).join(' ');
+                    const decl = postcss.decl({ prop, value });
+                    decl.important = node.important;
+                    decl.raws.before = node.raws.before;
+                    rule.nodes[i] = decl;
+                }
+            }
+        });
+    };
+});
+
+const enhancedPostcss = postcss([plugin]);
+
+/**
+ * 处理代码
+ */
+async function handleLessCode(code) {
+    return enhancedPostcss.process(code, { syntax: less });
+}
+
+/**
+ * 处理less文件
+ */
+async function handleLessFile(src, dst) {
+    dst = dst || src;
+    const code = fs.readFileSync(src, 'utf-8');
+    const newCode = (await handleLessCode(code)).css;
+    fs.writeFileSync(dst, newCode.toString());
+}
+
+/**
+ * 处理vue文件
+ */
+async function handleVueFile(src, dst) {
+    dst = dst || src;
+    const code = fs.readFileSync(src, 'utf-8');
+    const parser = new shuttle.JSVueParser.default();
+    const parseResult = parser.handleFile(src);
+    for (const block of (parseResult.style || [])) {
+        block.content = (await handleLessCode(block.content)).css;
+    }
+
+    const generator = new shuttle.JSVueGenerator.default();
+    generator.handleFile(parseResult, dst);
 }
 
 if (cfg) {

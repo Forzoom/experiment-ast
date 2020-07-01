@@ -1,8 +1,8 @@
 {
   "name": "@forzoom/shuttle",
-  "version": "0.0.4",
-  "main": "dist/experiment-ast.cjs.js",
-  "module": "dist/experiment-ast.esm.js",
+  "version": "0.0.7",
+  "main": "dist/shuttle.cjs.js",
+  "module": "dist/shuttle.esm.js",
   "types": "./types",
   "license": "MIT",
   "devDependencies": {
@@ -23,10 +23,10 @@
     "chai": "^4.2.0",
     "minimist": "^1.2.5",
     "mocha": "^8.0.1",
-    "postcss": "^7.0.27",
+    "postcss": "^7.0.32",
     "postcss-less": "^3.1.4",
     "recast": "^0.18.5",
-    "rollup": "^2.10.0",
+    "rollup": "^2.18.1",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-resolve": "^5.2.0",
@@ -40,6 +40,7 @@
   "scripts": {
     "build": "node build/build.js",
     "shuttle:cfg": "node ./bin/shuttle",
+    "shuttle": "node ./bin/shuttle --parser-generator=less -s=/Volumes/Repo2/playground/experiment-ast/assets/mine.vue -d=/Volumes/Repo2/playground/experiment-ast/assets/mine1.vue",
     "test:unit": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha -r ts-node/register ./test/unit/spec/util.ts"
   }
 }

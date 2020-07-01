@@ -188,6 +188,13 @@ export default class JSVueParser extends Parser {
             },
         });
 
+        if (!name) {
+            throw new Error('lost name');
+        }
+        /** 类名，大写开头 */
+        const className = (name.value as namedTypes.StringLiteral).value;
+
+        const vueNode = new VueNode(className);
         const body = originalAst.program.body as namedTypes.Node[];
         body.forEach((item) => {
             if (item.type === 'ImportDeclaration') {
@@ -200,12 +207,6 @@ export default class JSVueParser extends Parser {
         });
 
         handleImport(importDeclarations);
-
-        if (!name) {
-            throw new Error('lost name');
-        }
-        /** 类名，大写开头 */
-        const className = (name.value as namedTypes.StringLiteral).value;
 
         // 如果存在props，处理props
         let propNodes: PropNode[] = [];
@@ -237,7 +238,6 @@ export default class JSVueParser extends Parser {
             watchNodes = handleWatch((watchList.value as namedTypes.ObjectExpression).properties as namedTypes.Property[]);
         }
 
-        const vueNode = new VueNode(className);
         vueNode.originalAst = originalAst;
         vueNode.components = componentList;
         vueNode.filters = filters;

@@ -37142,7 +37142,7 @@
 
         defineProperty(this, "plugins", void 0);
 
-        this.plugins = plugins;
+        this.plugins = plugins || [];
       }
       /**
        * 添加新的插件
@@ -37386,6 +37386,15 @@
               this.traverse(p);
             }
           });
+
+          if (!name) {
+            throw new Error('lost name');
+          }
+          /** 类名，大写开头 */
+
+
+          var className = name.value.value;
+          var vueNode = new VueNode(className);
           var body = originalAst.program.body;
           body.forEach(function (item) {
             if (item.type === 'ImportDeclaration') ; else if (item.type === 'ExportDefaultDeclaration') {
@@ -37394,15 +37403,7 @@
               vueNode.other.push(item);
             }
           });
-          handleImport(importDeclarations);
-
-          if (!name) {
-            throw new Error('lost name');
-          }
-          /** 类名，大写开头 */
-
-
-          var className = name.value.value; // 如果存在props，处理props
+          handleImport(importDeclarations); // 如果存在props，处理props
 
           var propNodes = [];
 
@@ -37440,7 +37441,6 @@
             watchNodes = handleWatch(watchList.value.properties);
           }
 
-          var vueNode = new VueNode(className);
           vueNode.originalAst = originalAst;
           vueNode.components = componentList;
           vueNode.filters = filters;
@@ -38783,7 +38783,7 @@
     exports.JSVueGenerator = jsVue$1;
     exports.JSVueParser = jsVue;
     exports.TSClassVueGenerator = tsClassVue$1;
-    exports.TsClassVueParser = tsClassVue;
+    exports.TSClassVueParser = tsClassVue;
     exports.genPlugin = genPlugin;
 
     Object.defineProperty(exports, '__esModule', { value: true });

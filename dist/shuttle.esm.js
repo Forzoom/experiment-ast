@@ -37079,7 +37079,7 @@ var Parser = /*#__PURE__*/function () {
 
     defineProperty(this, "plugins", void 0);
 
-    this.plugins = plugins;
+    this.plugins = plugins || [];
   }
   /**
    * 添加新的插件
@@ -37323,6 +37323,15 @@ var JSVueParser = /*#__PURE__*/function (_Parser) {
           this.traverse(p);
         }
       });
+
+      if (!name) {
+        throw new Error('lost name');
+      }
+      /** 类名，大写开头 */
+
+
+      var className = name.value.value;
+      var vueNode = new VueNode(className);
       var body = originalAst.program.body;
       body.forEach(function (item) {
         if (item.type === 'ImportDeclaration') ; else if (item.type === 'ExportDefaultDeclaration') {
@@ -37331,15 +37340,7 @@ var JSVueParser = /*#__PURE__*/function (_Parser) {
           vueNode.other.push(item);
         }
       });
-      handleImport(importDeclarations);
-
-      if (!name) {
-        throw new Error('lost name');
-      }
-      /** 类名，大写开头 */
-
-
-      var className = name.value.value; // 如果存在props，处理props
+      handleImport(importDeclarations); // 如果存在props，处理props
 
       var propNodes = [];
 
@@ -37377,7 +37378,6 @@ var JSVueParser = /*#__PURE__*/function (_Parser) {
         watchNodes = handleWatch(watchList.value.properties);
       }
 
-      var vueNode = new VueNode(className);
       vueNode.originalAst = originalAst;
       vueNode.components = componentList;
       vueNode.filters = filters;
@@ -38715,4 +38715,4 @@ var genPlugin = {
   addParamsTypeAnnotation: plugin$1
 }; // parser generator
 
-export { jsRouter as JSRouterParserGenerator, jsStore as JSStoreParserGenerator, jsVue$1 as JSVueGenerator, jsVue as JSVueParser, tsClassVue$1 as TSClassVueGenerator, tsClassVue as TsClassVueParser, genPlugin };
+export { jsRouter as JSRouterParserGenerator, jsStore as JSStoreParserGenerator, jsVue$1 as JSVueGenerator, jsVue as JSVueParser, tsClassVue$1 as TSClassVueGenerator, tsClassVue as TSClassVueParser, genPlugin };

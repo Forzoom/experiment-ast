@@ -1,18 +1,18 @@
 import fs from 'fs';
 import postcss from 'postcss';
 import less from 'postcss-less';
-import { getSection } from '@/utils';
+import JSVueParser from '@/parser/jsVue';
 
 /**
  * 移除unit函数
  * @param {string} str
  */
-function stripUnit(str: string) {
+function _stripUnit(str: string) {
     return /unit\(.*\)/.test(str) ? str.replace(/unit\(([^()]*?)\)/g, '$1') : str;
 }
 
 /** 添加px */
-function addUnit(str: string) {
+function _addUnit(str: string) {
     const n = Number(str);
     return isNaN(n) ? str : str + 'px';
 }
@@ -36,7 +36,7 @@ const plugin = postcss.plugin('postcss-test-plugin', (opts) => {
                 if (node.type == 'atrule' && node.name == 'px2rem6') {
                     const params = node.params.substring(1, node.params.length - 1).split(/\s*,\s*/);
                     const prop = params[0];
-                    const value = params.slice(1).map(value => addUnit(stripUnit(value))).join(' ');
+                    const value = params.slice(1).map(value => _addUnit(_stripUnit(value))).join(' ');
                     const decl = postcss.decl({ prop, value });
                     decl.important = node.important;
                     decl.raws.before = node.raws.before;
@@ -49,6 +49,9 @@ const plugin = postcss.plugin('postcss-test-plugin', (opts) => {
 
 const enhancedPostcss = postcss([plugin]);
 
+/**
+ * 处理代码
+ */
 export async function handleCode(code: string) {
     return enhancedPostcss.process(code, { syntax: less });
 }
@@ -56,25 +59,23 @@ export async function handleCode(code: string) {
 /**
  * 处理less文件
  */
-export async function handleLessFile(src: string, dist: string) {
-    dist = dist || src;
+export async function handleLessFile(src: string, dst: string) {
+    dst = dst || src;
     const code = fs.readFileSync(src, 'utf-8');
-    const newCode = handleCode(code);
-    fs.writeFileSync(dist, newCode);
+    const newCode = await handleCode(code);
+    fs.writeFileSync(dst, newCode.toString());
 }
 
 /**
  * 处理vue文件
  */
-export async function handleVueFile(src: string, dist: string) {
-    dist = dist || src;
+export async function handleVueFile(src: string, dst: string) {
+    dst = dst || src;
     const code = fs.readFileSync(src, 'utf-8');
-    const result = getSection(code);
-    if (result.style) {
-        const newLessCode = handleCode(result.style.content);
-        const newCode = code.substr(0, result.style.startPos) + newLessCode + code.substr(result.style.endPos);
-        fs.writeFileSync(dist, newCode);
-    } else {
-        fs.writeFileSync(dist, code);
+
+    const parser = new JSVueParser();
+    const parseResult = parser.handleFile(src);
+    for (const block of (parseResult.style || [])) {
+        console.log(handleCode(block.content));
     }
 }
