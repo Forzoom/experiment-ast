@@ -19,15 +19,19 @@ shuttle库提供了命令行形式
 
 ```bash
 shuttle --help # 查看提示信息
-shuttle -s=/path/to/src/component.vue\ # 指定源文件路径
-  -d=/path/to/dst/component.vue\ # 指定生成文件路径
-  -p=jsVue\ # 指定解析器
-  -g=tsClassVue\ # 指定生成其
-  --generator-plugin=addImportStore\ # 指定生成器插件
-  --generator-plugin=addParamsTypeAnnotation # 指定生成器插件
 ```
 
-#### 解析器
+```bash
+# 将jsVue格式转换成tsClassVue格式
+shuttle -s=/path/to/src/component.vue\ # 指定源文件路径
+  -d=/path/to/dst/component.vue\ # 指定生成文件路径
+  -p=jsVue\ # 指定parser
+  -g=tsClassVue\ # 指定generator
+  --generator-plugin=addImportStore\ # 指定generator插件
+  --generator-plugin=addParamsTypeAnnotation # 指定generator插件
+```
+
+#### parser
 
 支持: `jsVue`、`tsClassVue`
 
@@ -42,23 +46,19 @@ export default {
 `tsClassVue`格式为
 ```typescript
 @Component({
-    name: 'Cmp'
+    name: 'Cmp',
 })
 export default class Cmp extends Vue {}
 ```
 
-#### 生成器
+#### generator
 
 支持: `jsVue`、`tsClassVue`，其格式类型和解析器中相同
 
-#### 代码引入
+#### parserGenerator
 
-除了命令行模式外还支持代码引入
+支持: `jsStore`、`jsRouter`，用于将js格式的 store、router 文件转换成 ts 格式
 
 ### Test
 
-应该如何做test呢?
-
-### Todo
-
-1. 当template中有多个template的情况下，会发生错误
+仅进行部分Test

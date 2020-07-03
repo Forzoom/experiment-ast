@@ -8,7 +8,7 @@ function parseAttr(str: string) {
     const parts = str.replace(/[ ]+/g, ' ').split(' ');
     const attr: { [key: string]: string } = {};
     for (const part of parts) {
-        const match = part.match(/([a-z]+)="([a-z]+)"/);
+        const match = part.match(/([a-z]+)=["']([a-z]+)["']/);
         if (match) {
             const [ _, key, value ] = match;
             attr[key] = value;
@@ -31,7 +31,7 @@ function formatAttr(attrs?: Attrs | null) {
  */
 export function parseBlock(code: string) {
     const result: Block[] = [];
-    const startRegexp = /<(script|template|style)([a-z'"= ]*)?>/;
+    const startRegexp = /<(script|template|style)(.*["'])?>/;
     const endRegexp = /<\/(script|template|style)>/;
 
     let terminate = false;

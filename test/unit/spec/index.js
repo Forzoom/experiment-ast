@@ -2,7 +2,7 @@ const shuttle = require('../../../dist/shuttle.cjs.js');
 const { expect } = require('chai');
 
 describe('parser + generator', () => {
-const code = `
+    const code = `
 <script>
 import Test from 'test';
 
@@ -21,7 +21,6 @@ export default {
 };
 </script>
 `;
-
     describe('parser', () => {
         it('test', () => {
             const parser = new shuttle.JSVueParser.default();
